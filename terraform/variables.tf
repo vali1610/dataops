@@ -5,7 +5,6 @@ variable "region"            { type = string }
 variable "bucket_name"       { type = string }
 
 variable "composer_name"          { type = string }
-variable "composer_node_count"    { type = number }
 variable "composer_image_version" { type = string }
 
 variable "dataproc_name"        { type = string }

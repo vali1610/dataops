@@ -76,7 +76,6 @@ jobs:
             -var="region=${{ github.event.inputs.region }}" \
             -var="bucket_name=${{ github.event.inputs.bucket_name }}" \
             -var="composer_name=${{ github.event.inputs.composer_name }}" \
-            -var="composer_node_count=${{ github.event.inputs.composer_node_count }}" \
             -var="composer_image_version=${{ github.event.inputs.composer_image_version }}" \
             -var="dataproc_name=${{ github.event.inputs.dataproc_name }}" \
             -var="dataproc_num_workers=${{ github.event.inputs.dataproc_num_workers }}"
