@@ -1,0 +1,15 @@
+name: Hello Vale Test
+
+on:
+  push:
+    branches: [test_v]  
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show branch info
+        run: echo "Current branch is : ${{ github.ref }}"
+      
+      - name: Hello world
+        run: echo "Test GitHub actions pipeline"
