@@ -15,6 +15,7 @@ module "composer" {
   name           = var.composer_name
   region         = var.region
   image_version  = var.composer_image_version
+  project        = var.project_id
 }
 
 module "dataproc" {
