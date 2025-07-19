@@ -9,9 +9,6 @@ resource "google_composer_environment" "this" {
     software_config {
       image_version = var.image_version
     }
-
-    environment_size = "ENVIRONMENT_SIZE_SMALL"
-
     workloads_config {
       scheduler {
         cpu        = 1
