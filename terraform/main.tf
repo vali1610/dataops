@@ -16,6 +16,7 @@ module "composer" {
   region         = var.region
   image_version  = var.composer_image_version
   project_id        = var.project_id
+  composer_sa_email = var.composer_sa_email
 }
 
 module "dataproc" {
