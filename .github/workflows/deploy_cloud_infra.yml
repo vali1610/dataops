@@ -1,83 +1,122 @@
-name: Deploy GCP Infrastructure
+name: Deploy GCP Infrastructure (split jobs)
 
 on:
   workflow_dispatch:
     inputs:
       project_id:
-        description: "GCP Project ID"
-        required: true
         default: "dataops-466411"
+        required: true
+        description: "GCP Project ID"
       region:
-        description: "GCP Region"
-        required: true
         default: "europe-west1"
+        required: true
+        description: "GCP Region"
       bucket_name:
-        description: "GCS Bucket Name"
-        required: true
         default: "vale-dataops-bucket"
+        required: true
+        description: "GCS Bucket Name"
       composer_name:
-        description: "Composer Environment Name"
-        required: true
         default: "vale-composer"
-      # composer_node_count:
-      #   description: "Composer node count"
-      #   required: true
-      #   default: "3"
+        required: true
+        description: "Composer Environment Name"
       composer_image_version:
+        default: "composer-3-airflow-2.10.5"
+        required: true
         description: "Composer image version"
-        required: true
-        default: "composer-3-airflow-2.10.2"
       dataproc_name:
-        description: "Dataproc cluster name"
-        required: true
         default: "vale-dataproc"
-      dataproc_num_workers:
-        description: "Dataproc number of workers"
         required: true
+        description: "Dataproc Cluster Name"
+      dataproc_num_workers:
         default: "2"
+        required: true
+        description: "Number of workers"
 
 jobs:
-  deploy:
+  gcs:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Authenticate with GCP
+      - name: Auth GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Set up Google Cloud SDK
+      - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Check auth
-        run: gcloud auth list && gcloud config list
-
-      - name: Install Terraform
+      - name: Terraform Setup
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
-      - name: Terraform Init
+      - name: Terraform Apply GCS
         run: |
-          ls -altrh
           cd terraform
           terraform init
-
-      - name: Terraform Apply
-        run: |
-          cd terraform
-          terraform apply \
-            -input=false \
-            -no-color \
-            -auto-approve \
+          terraform apply -auto-approve \
+            -target=module.gcs \
             -var="project_id=${{ github.event.inputs.project_id }}" \
             -var="region=${{ github.event.inputs.region }}" \
-            -var="bucket_name=${{ github.event.inputs.bucket_name }}" \
+            -var="bucket_name=${{ github.event.inputs.bucket_name }}"
+
+  composer:
+    runs-on: ubuntu-latest
+    needs: gcs
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Auth GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Apply Composer
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve \
+            -target=module.composer \
+            -var="project_id=${{ github.event.inputs.project_id }}" \
+            -var="region=${{ github.event.inputs.region }}" \
             -var="composer_name=${{ github.event.inputs.composer_name }}" \
-            -var="composer_image_version=${{ github.event.inputs.composer_image_version }}" \
+            -var="composer_image_version=${{ github.event.inputs.composer_image_version }}"
+
+  dataproc:
+    runs-on: ubuntu-latest
+    needs: composer
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Auth GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Apply Dataproc
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve \
+            -target=module.dataproc \
+            -var="project_id=${{ github.event.inputs.project_id }}" \
+            -var="region=${{ github.event.inputs.region }}" \
             -var="dataproc_name=${{ github.event.inputs.dataproc_name }}" \
             -var="dataproc_num_workers=${{ github.event.inputs.dataproc_num_workers }}"
-        timeout-minutes: 30

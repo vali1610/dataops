@@ -4,7 +4,6 @@ resource "google_composer_environment" "this" {
   project = var.project_id
 
   config {
-    node_count = 3
 
     software_config {
       image_version = var.image_version
