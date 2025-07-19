@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Show branch info
-        run: echo "Current branch is : ${{ github.ref }}"
+        run: echo "Current branch is: $GITHUB_REF"
+
       
       - name: Hello world
         run: echo "Test GitHub actions pipeline"
