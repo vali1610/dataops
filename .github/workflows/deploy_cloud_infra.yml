@@ -19,10 +19,10 @@ on:
         description: "Composer Environment Name"
         required: true
         default: "vale-composer"
-      composer_node_count:
-        description: "Composer node count"
-        required: true
-        default: "3"
+      # composer_node_count:
+      #   description: "Composer node count"
+      #   required: true
+      #   default: "3"
       composer_image_version:
         description: "Composer image version"
         required: true
