@@ -14,7 +14,6 @@ module "composer" {
   source         = "./modules/composer"
   name           = var.composer_name
   region         = var.region
-  node_count     = var.composer_node_count
   image_version  = var.composer_image_version
 }
 
