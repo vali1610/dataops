@@ -69,7 +69,10 @@ jobs:
       - name: Terraform Apply
         run: |
           cd terraform
-          terraform apply -auto-approve \
+          terraform apply \
+            -input=false \
+            -no-color \
+            -auto-approve \
             -var="project_id=${{ github.event.inputs.project_id }}" \
             -var="region=${{ github.event.inputs.region }}" \
             -var="bucket_name=${{ github.event.inputs.bucket_name }}" \
@@ -77,3 +80,4 @@ jobs:
             -var="composer_image_version=${{ github.event.inputs.composer_image_version }}" \
             -var="dataproc_name=${{ github.event.inputs.dataproc_name }}" \
             -var="dataproc_num_workers=${{ github.event.inputs.dataproc_num_workers }}"
+        timeout-minutes: 30
