@@ -1,0 +1,74 @@
+name: Deploy GCP Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: "GCP Project ID"
+        required: true
+        default: "dataops-466411"
+      region:
+        description: "GCP Region"
+        required: true
+        default: "europe-west1"
+      bucket_name:
+        description: "GCS Bucket Name"
+        required: true
+        default: "vale-dataops-bucket"
+      composer_name:
+        description: "Composer Environment Name"
+        required: true
+        default: "vale-composer"
+      composer_node_count:
+        description: "Composer node count"
+        required: true
+        default: "3"
+      composer_image_version:
+        description: "Composer image version"
+        required: true
+        default: "composer-3-airflow-2.10.2"
+      dataproc_name:
+        description: "Dataproc cluster name"
+        required: true
+        default: "vale-dataproc"
+      dataproc_num_workers:
+        description: "Dataproc number of workers"
+        required: true
+        default: "2"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ github.event.inputs.project_id }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Write GCP credentials file
+        run: echo '${{ secrets.GCP_SA_KEY }}' > gcp-key.json
+
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init
+
+      - name: Terraform Apply
+        run: |
+          cd terraform
+          terraform apply -auto-approve \
+            -var="credentials_file=gcp-key.json" \
+            -var="project_id=${{ github.event.inputs.project_id }}" \
+            -var="region=${{ github.event.inputs.region }}" \
+            -var="bucket_name=${{ github.event.inputs.bucket_name }}" \
+            -var="composer_name=${{ github.event.inputs.composer_name }}" \
+            -var="composer_node_count=${{ github.event.inputs.composer_node_count }}" \
+            -var="composer_image_version=${{ github.event.inputs.composer_image_version }}" \
+            -var="dataproc_name=${{ github.event.inputs.dataproc_name }}" \
+            -var="dataproc_num_workers=${{ github.event.inputs.dataproc_num_workers }}"
