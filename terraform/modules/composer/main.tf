@@ -9,6 +9,7 @@ resource "google_composer_environment" "this" {
     software_config {
       image_version = var.image_version
     }
+
     workloads_config {
       scheduler {
         cpu        = 1
@@ -18,6 +19,8 @@ resource "google_composer_environment" "this" {
       }
     }
 
-    service_account = var.composer_sa_email
+    node_config {
+      service_account = var.composer_sa_email
+    }
   }
 }
