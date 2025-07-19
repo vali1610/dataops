@@ -52,9 +52,8 @@ jobs:
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
-
-      - name: Write GCP credentials file
-        run: echo '${{ secrets.GCP_SA_KEY }}' > gcp-key.json
+      - name: Check auth
+        run: gcloud auth list && gcloud config list
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
@@ -71,7 +70,6 @@ jobs:
         run: |
           cd terraform
           terraform apply -auto-approve \
-            -var="credentials_file=gcp-key.json" \
             -var="project_id=${{ github.event.inputs.project_id }}" \
             -var="region=${{ github.event.inputs.region }}" \
             -var="bucket_name=${{ github.event.inputs.bucket_name }}" \

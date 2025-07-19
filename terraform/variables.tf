@@ -9,3 +9,7 @@ variable "composer_image_version" { type = string }
 
 variable "dataproc_name"        { type = string }
 variable "dataproc_num_workers" { type = number }
+variable "composer_sa_email" {
+  description = "Email of the service account used for Composer"
+  type        = string
+}
