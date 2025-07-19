@@ -58,6 +58,7 @@ jobs:
 
       - name: Terraform Init
         run: |
+          ls -altrh
           cd terraform
           terraform init
 
