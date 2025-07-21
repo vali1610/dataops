@@ -1,0 +1,38 @@
+{
+  "partitionToWriteStats" : {
+    "" : [ {
+      "fileId" : "b5bebf57-4073-42ed-a68c-4dd3efcc21c2-0",
+      "path" : "b5bebf57-4073-42ed-a68c-4dd3efcc21c2-0_0-82-383_20250720182845724.parquet",
+      "cdcStats" : null,
+      "prevCommit" : "null",
+      "numWrites" : 789,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 789,
+      "totalWriteBytes" : 450472,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 450472,
+      "minEventTime" : null,
+      "maxEventTime" : null,
+      "runtimeStats" : {
+        "totalScanTime" : 0,
+        "totalUpsertTime" : 0,
+        "totalCreateTime" : 251
+      }
+    } ]
+  },
+  "compacted" : false,
+  "extraMetadata" : {
+    "schema" : "{\"type\":\"record\",\"name\":\"customer_hudi_record\",\"namespace\":\"hoodie.customer_hudi\",\"fields\":[{\"name\":\"label\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"id\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_1\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_2\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"fea_3\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"fea_4\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"fea_5\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_6\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_7\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_8\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_9\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"fea_10\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"fea_11\",\"type\":\"double\"}]}"
+  },
+  "operationType" : "INSERT"
+}

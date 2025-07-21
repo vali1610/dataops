@@ -1,0 +1,151 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "c01f0292-5091-4b46-a62f-793b50b06f4e",
+  "location" : "/Users/valentinabordei/Documents/dataops/local_processing/converted/iceberg/db/customer_data",
+  "last-sequence-number" : 2,
+  "last-updated-ms" : 1753024882466,
+  "last-column-id" : 13,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "label",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 2,
+      "name" : "id",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 3,
+      "name" : "fea_1",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 4,
+      "name" : "fea_2",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 5,
+      "name" : "fea_3",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 6,
+      "name" : "fea_4",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 7,
+      "name" : "fea_5",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 8,
+      "name" : "fea_6",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 9,
+      "name" : "fea_7",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 10,
+      "name" : "fea_8",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 11,
+      "name" : "fea_9",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 12,
+      "name" : "fea_10",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 13,
+      "name" : "fea_11",
+      "required" : false,
+      "type" : "double"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "valentinabordei",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 5325142957868365944,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 5325142957868365944,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 4640442852124077414,
+    "timestamp-ms" : 1753022361758,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1753022349495",
+      "added-data-files" : "1",
+      "added-records" : "789",
+      "added-files-size" : "13265",
+      "changed-partition-count" : "1",
+      "total-records" : "789",
+      "total-files-size" : "13265",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "/Users/valentinabordei/Documents/dataops/local_processing/converted/iceberg/db/customer_data/metadata/snap-4640442852124077414-1-92606ba8-ad34-4d1b-9781-fef613a8f77a.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 2,
+    "snapshot-id" : 5325142957868365944,
+    "timestamp-ms" : 1753024882466,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1753024870630",
+      "added-data-files" : "1",
+      "added-records" : "789",
+      "added-files-size" : "13265",
+      "changed-partition-count" : "1",
+      "total-records" : "789",
+      "total-files-size" : "13265",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "converted/iceberg/db/customer_data/metadata/snap-5325142957868365944-1-b6d2de4b-6650-462c-9c18-00456d32e9cd.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1753024882466,
+    "snapshot-id" : 5325142957868365944
+  } ],
+  "metadata-log" : [ {
+    "timestamp-ms" : 1753022361758,
+    "metadata-file" : "converted/iceberg/db/customer_data/metadata/v1.metadata.json"
+  } ]
+}

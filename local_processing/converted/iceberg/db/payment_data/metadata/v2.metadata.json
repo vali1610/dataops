@@ -1,0 +1,146 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "eae12d0e-e1f2-4fc1-a8a7-4a18ccdd4ffa",
+  "location" : "/Users/valentinabordei/Documents/dataops/local_processing/converted/iceberg/db/payment_data",
+  "last-sequence-number" : 2,
+  "last-updated-ms" : 1753024882659,
+  "last-column-id" : 12,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "id",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 2,
+      "name" : "OVD_t1",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 3,
+      "name" : "OVD_t2",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 4,
+      "name" : "OVD_t3",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 5,
+      "name" : "OVD_sum",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 6,
+      "name" : "pay_normal",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 7,
+      "name" : "prod_code",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 8,
+      "name" : "prod_limit",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 9,
+      "name" : "update_date",
+      "required" : false,
+      "type" : "date"
+    }, {
+      "id" : 10,
+      "name" : "new_balance",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 11,
+      "name" : "highest_balance",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 12,
+      "name" : "report_date",
+      "required" : false,
+      "type" : "date"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "valentinabordei",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 7031481609720922557,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 7031481609720922557,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 4677197052359373811,
+    "timestamp-ms" : 1753022361962,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1753022349495",
+      "added-data-files" : "1",
+      "added-records" : "304",
+      "added-files-size" : "9180",
+      "changed-partition-count" : "1",
+      "total-records" : "304",
+      "total-files-size" : "9180",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "/Users/valentinabordei/Documents/dataops/local_processing/converted/iceberg/db/payment_data/metadata/snap-4677197052359373811-1-4b5993f3-6e92-4779-84c1-4f3776064b1b.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 2,
+    "snapshot-id" : 7031481609720922557,
+    "timestamp-ms" : 1753024882659,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1753024870630",
+      "added-data-files" : "1",
+      "added-records" : "304",
+      "added-files-size" : "9180",
+      "changed-partition-count" : "1",
+      "total-records" : "304",
+      "total-files-size" : "9180",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "converted/iceberg/db/payment_data/metadata/snap-7031481609720922557-1-ba44125b-72d8-4dcc-9051-f20a086b77eb.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1753024882659,
+    "snapshot-id" : 7031481609720922557
+  } ],
+  "metadata-log" : [ {
+    "timestamp-ms" : 1753022361962,
+    "metadata-file" : "converted/iceberg/db/payment_data/metadata/v1.metadata.json"
+  } ]
+}

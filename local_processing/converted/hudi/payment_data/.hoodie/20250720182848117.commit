@@ -1,0 +1,38 @@
+{
+  "partitionToWriteStats" : {
+    "" : [ {
+      "fileId" : "77f10dbf-4fb6-4810-afe2-6c78e81565b7-0",
+      "path" : "77f10dbf-4fb6-4810-afe2-6c78e81565b7-0_0-110-407_20250720182848117.parquet",
+      "cdcStats" : null,
+      "prevCommit" : "null",
+      "numWrites" : 287,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 287,
+      "totalWriteBytes" : 444343,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 444343,
+      "minEventTime" : null,
+      "maxEventTime" : null,
+      "runtimeStats" : {
+        "totalScanTime" : 0,
+        "totalUpsertTime" : 0,
+        "totalCreateTime" : 96
+      }
+    } ]
+  },
+  "compacted" : false,
+  "extraMetadata" : {
+    "schema" : "{\"type\":\"record\",\"name\":\"payment_hudi_record\",\"namespace\":\"hoodie.payment_hudi\",\"fields\":[{\"name\":\"id\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"OVD_t1\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"OVD_t2\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"OVD_t3\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"OVD_sum\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"pay_normal\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"prod_code\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"prod_limit\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"update_date\",\"type\":[\"null\",{\"type\":\"int\",\"logicalType\":\"date\"}],\"default\":null},{\"name\":\"new_balance\",\"type\":[\"null\",\"double\"],\"default\":null},{\"name\":\"highest_balance\",\"type\":\"double\"},{\"name\":\"report_date\",\"type\":[\"null\",{\"type\":\"int\",\"logicalType\":\"date\"}],\"default\":null}]}"
+  },
+  "operationType" : "INSERT"
+}
