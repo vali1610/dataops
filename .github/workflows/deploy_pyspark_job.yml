@@ -46,11 +46,11 @@ jobs:
 
       - name: Debug – găsește scriptul
         run: |
-          find . -name "spark_etl_job.py"
+          find . -name "pyspark_job.py"
 
       - name: Upload Spark job and input CSVs to GCS
         run: |
-          gsutil cp ./local_processing/spark_etl_job.py gs://vale-dataops-bucket/jobs/
+          gsutil cp ./local_processing/pyspark_job.py gs://vale-dataops-bucket/jobs/
           gsutil cp ./customer_data_dirty.csv gs://vale-dataops-bucket/data/
           gsutil cp ./payment_data_dirty.csv gs://vale-dataops-bucket/data/
 
