@@ -1,0 +1,58 @@
+name: Deploy and Run Spark Job on Dataproc
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: "GCP Project ID"
+        required: true
+        default: "dataops-466411"
+      region:
+        description: "GCP Region"
+        required: true
+        default: "europe-west1"
+      bucket_name:
+        description: "GCS Bucket Name"
+        required: true
+        default: "vale-dataops-bucket"
+      dataproc_cluster:
+        description: "Dataproc Cluster Name"
+        required: true
+        default: "vale-dataproc"
+      customer_csv:
+        description: "Path to customer CSV in GCS"
+        required: true
+        default: "gs://vale-dataops-bucket/data/customer.csv"
+      payment_csv:
+        description: "Path to payment CSV in GCS"
+        required: true
+        default: "gs://vale-dataops-bucket/data/payment.csv"
+
+jobs:
+  deploy_and_run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Auth GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Upload Spark job to GCS
+        run: |
+          gsutil cp spark_etl_job.py gs://${{ github.event.inputs.bucket_name }}/jobs/spark_etl_job.py
+
+      - name: Submit Spark job to Dataproc
+        run: |
+          gcloud dataproc jobs submit pyspark gs://${{ github.event.inputs.bucket_name }}/jobs/spark_etl_job.py \
+            --cluster=${{ github.event.inputs.dataproc_cluster }} \
+            --region=${{ github.event.inputs.region }} \
+            -- \
+            ${{ github.event.inputs.customer_csv }} \
+            ${{ github.event.inputs.payment_csv }}
