@@ -44,10 +44,6 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Debug – găsește scriptul
-        run: |
-          find . -name "pyspark_job.py"
-
       - name: Upload Spark job and input CSVs to GCS
         run: |
           gsutil cp ./local_processing/pyspark_job.py gs://vale-dataops-bucket/jobs/
@@ -57,7 +53,7 @@ jobs:
       - name: Submit Spark job to Dataproc
         run: |
           gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/spark_etl_job.py \
-            --cluster=vale-spark-cluster \
+            --cluster=vale-dataproc \
             --region=europe-west1 \
             --project=dataops-466411 \
             -- \
