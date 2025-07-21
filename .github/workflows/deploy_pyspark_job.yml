@@ -46,7 +46,8 @@ jobs:
 
       - name: Upload Spark job to GCS
         run: |
-          gsutil cp /local_processing/spark_etl_job.py gs://${{ github.event.inputs.bucket_name }}/jobs/spark_etl_job.py
+          ls -altrh
+          gsutil cp local_processing/spark_etl_job.py gs://${{ github.event.inputs.bucket_name }}/jobs/spark_etl_job.py
 
       - name: Submit Spark job to Dataproc
         run: |
