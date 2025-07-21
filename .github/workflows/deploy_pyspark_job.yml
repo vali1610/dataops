@@ -56,9 +56,13 @@ jobs:
 
       - name: Submit Spark job to Dataproc
         run: |
-          gcloud dataproc jobs submit pyspark gs://${{ github.event.inputs.bucket_name }}/jobs/pyspark_job.py \
-            --cluster=${{ github.event.inputs.dataproc_cluster }} \
-            --region=${{ github.event.inputs.region }} \
+          gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/spark_etl_job.py \
+            --cluster=vale-spark-cluster \
+            --region=europe-west1 \
+            --project=dataops-466411 \
             -- \
-            ${{ github.event.inputs.customer_csv }} \
-            ${{ github.event.inputs.payment_csv }}
+            gs://vale-dataops-bucket/data/customer_data_dirty.csv \
+            gs://vale-dataops-bucket/data/payment_data_dirty.csv \
+            --jars=gs://vale-dataops-bucket/jars/delta-core_2.12-2.1.0.jar \
+            --properties="spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension,spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
+
