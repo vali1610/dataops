@@ -44,10 +44,15 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Upload Spark job to GCS
+      - name: Debug – găsește scriptul
         run: |
-          ls -altrh
-          gsutil cp ./local_processing/spark_etl_job.py gs://vale-dataops-bucket/jobs/spark_etl_job.py
+          find . -name "spark_etl_job.py"
+
+      - name: Upload Spark job and input CSVs to GCS
+        run: |
+          gsutil cp ./local_processing/spark_etl_job.py gs://vale-dataops-bucket/jobs/
+          gsutil cp ./customer_data_dirty.csv gs://vale-dataops-bucket/data/
+          gsutil cp ./payment_data_dirty.csv gs://vale-dataops-bucket/data/
 
       - name: Submit Spark job to Dataproc
         run: |
