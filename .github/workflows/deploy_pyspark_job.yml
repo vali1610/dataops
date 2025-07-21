@@ -58,6 +58,5 @@ jobs:
             --project=dataops-466411 \
             --jars=gs://spark-lib/bigquery/spark-bigquery-with-dependencies_2.12-0.26.0.jar \
             --properties="spark.jars.packages=io.delta:delta-core_2.12:2.4.0" \
-            --py-files dependencies.zip \
             -- \
             gs://vale-dataops-bucket/data/customer_data_dirty.csv gs://vale-dataops-bucket/data/payment_data_dirty.csv
