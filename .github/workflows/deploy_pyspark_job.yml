@@ -60,4 +60,4 @@ jobs:
             --packages=io.delta:delta-core_2.12:2.4.0 \
             --py-files dependencies.zip \
             -- \
-            gs://<bucket>/data/customer_data_dirty.csv gs://<bucket>/data/payment_data_dirty.csv
+            gs://vale-dataops-bucket/data/customer_data_dirty.csv gs://vale-dataops-bucket/data/payment_data_dirty.csv
