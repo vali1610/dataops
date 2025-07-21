@@ -52,7 +52,7 @@ jobs:
 
       - name: Submit Spark job to Dataproc
         run: |
-          gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/spark_etl_job.py \
+          gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/pyspark_job.py \
             --cluster=vale-dataproc \
             --region=europe-west1 \
             --project=dataops-466411 \
