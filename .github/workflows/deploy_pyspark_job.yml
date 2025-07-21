@@ -52,13 +52,12 @@ jobs:
 
       - name: Submit Spark job to Dataproc
         run: |
-          gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/pyspark_job.py \
-            --cluster=vale-dataproc \
+          gcloud dataproc jobs submit pyspark local_processing/pyspark_job.py \
+            --cluster=my-cluster \
             --region=europe-west1 \
-            --project=dataops-466411 \
+            --project=my-project \
+            --jars=gs://spark-lib/bigquery/spark-bigquery-with-dependencies_2.12-0.26.0.jar \
+            --packages=io.delta:delta-core_2.12:2.4.0 \
+            --py-files dependencies.zip \
             -- \
-            gs://vale-dataops-bucket/data/customer_data_dirty.csv \
-            gs://vale-dataops-bucket/data/payment_data_dirty.csv \
-            --jars=gs://vale-dataops-bucket/jars/delta-core_2.12-2.1.0.jar \
-            --properties="spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension,spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
-
+            gs://<bucket>/data/customer_data_dirty.csv gs://<bucket>/data/payment_data_dirty.csv
