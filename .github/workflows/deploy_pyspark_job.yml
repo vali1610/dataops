@@ -56,7 +56,7 @@ jobs:
 
       - name: Submit Spark job to Dataproc
         run: |
-          gcloud dataproc jobs submit pyspark gs://${{ github.event.inputs.bucket_name }}/jobs/spark_etl_job.py \
+          gcloud dataproc jobs submit pyspark gs://${{ github.event.inputs.bucket_name }}/jobs/pyspark_job.py \
             --cluster=${{ github.event.inputs.dataproc_cluster }} \
             --region=${{ github.event.inputs.region }} \
             -- \
