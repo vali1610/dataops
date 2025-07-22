@@ -4,10 +4,13 @@ from pyspark.sql.functions import col, mean, to_date
 
 def init_spark():
     spark = SparkSession.builder \
-        .appName("Full ETL Job") \
+        .appName("ETL") \
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
         .getOrCreate()
     return spark
+
 
 def read_csv(spark, path):
     return spark.read.option("header", True).option("inferSchema", True).csv(path)
