@@ -50,13 +50,29 @@ jobs:
           gsutil cp ./customer_data_dirty.csv gs://vale-dataops-bucket/data/
           gsutil cp ./payment_data_dirty.csv gs://vale-dataops-bucket/data/
 
+      - name: Download and Upload JAR dependencies to GCS
+        run: |
+          mkdir -p deps
+
+          # Descarcă .jar-urile
+          wget -O deps/delta-core_2.12-2.4.0.jar https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.4.0/delta-core_2.12-2.4.0.jar
+
+          wget -O deps/hudi-spark3.4-bundle_2.12-0.14.1.jar https://repo1.maven.org/maven2/org/apache/hudi/hudi-spark3.4-bundle_2.12/0.14.1/hudi-spark3.4-bundle_2.12-0.14.1.jar
+
+          wget -O deps/iceberg-spark-runtime-3.4_2.12-1.4.2.jar https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.4_2.12/1.4.2/iceberg-spark-runtime-3.4_2.12-1.4.2.jar
+
+          gsutil cp deps/*.jar gs://vale-dataops-bucket/libs/
+
       - name: Submit Spark job to Dataproc
         run: |
           gcloud dataproc jobs submit pyspark local_processing/pyspark_job.py \
             --cluster=vale-dataproc \
             --region=europe-west1 \
             --project=dataops-466411 \
-            --jars=https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.4.0/delta-core_2.12-2.4.0.jar,gs://spark-lib/bigquery/spark-bigquery-with-dependencies_2.12-0.26.0.jar \
+            --jars=gs://vale-dataops-bucket/libs/delta-core_2.12-2.4.0.jar,\
+            gs://vale-dataops-bucket/libs/hudi-spark3.4-bundle_2.12-0.14.1.jar,\
+            gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.4_2.12-1.4.2.jar \
             -- \
-            gs://vale-dataops-bucket/data/customer_data_dirty.csv gs://vale-dataops-bucket/data/payment_data_dirty.csv
+            gs://vale-dataops-bucket/data/customer_data_dirty.csv \
+            gs://vale-dataops-bucket/data/payment_data_dirty.csv
 
