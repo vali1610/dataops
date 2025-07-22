@@ -55,7 +55,7 @@ jobs:
           mkdir -p deps
 
           
-          wget -O deps/delta-core_2.12-2.4.0.jar https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.4.0/delta-core_2.12-2.4.0.jar
+          wget -O deps/delta-core_2.12-1.2.1.jar https://repo1.maven.org/maven2/io/delta/delta-core_2.12/1.2.1/delta-core_2.12-1.2.1.jar
 
           wget -O deps/hudi-spark3.4-bundle_2.12-0.14.1.jar https://repo1.maven.org/maven2/org/apache/hudi/hudi-spark3.4-bundle_2.12/0.14.1/hudi-spark3.4-bundle_2.12-0.14.1.jar
 
@@ -70,7 +70,7 @@ jobs:
             --cluster=vale-dataproc \
             --region=europe-west1 \
             --project=dataops-466411 \
-            --jars=gs://vale-dataops-bucket/libs/delta-core_2.12-2.4.0.jar,gs://vale-dataops-bucket/libs/delta-storage-2.4.0.jar,gs://vale-dataops-bucket/libs/hudi-spark3.4-bundle_2.12-0.14.1.jar,gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.4_2.12-1.4.2.jar\
+            --jars=gs://vale-dataops-bucket/libs/delta-core_2.12-1.2.1.jar,gs://vale-dataops-bucket/libs/delta-storage-2.4.0.jar,gs://vale-dataops-bucket/libs/hudi-spark3.4-bundle_2.12-0.14.1.jar,gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.4_2.12-1.4.2.jar\
             -- \
             gs://vale-dataops-bucket/data/customer_data_dirty.csv gs://vale-dataops-bucket/data/payment_data_dirty.csv
 
