@@ -55,7 +55,8 @@ jobs:
           mkdir -p deps
 
           wget -O deps/delta-spark_2.12-3.2.0.jar https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.2.0/delta-spark_2.12-3.2.0.jar
-          
+          wget -O deps/delta-storage-3.0.0.jar https://repo1.maven.org/maven2/io/delta/delta-storage/3.0.0/delta-storage-3.0.0.jar
+
 
           wget -O deps/iceberg-spark-runtime-3.5_2.12-1.5.0.jar https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.5.0/iceberg-spark-runtime-3.5_2.12-1.5.0.jar
           
@@ -72,7 +73,7 @@ jobs:
           gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/pyspark_job.py \
             --cluster=vale-dataproc \
             --region=europe-west1 \
-            --jars=gs://vale-dataops-bucket/libs/delta-spark_2.12-3.2.0.jar,gs://vale-dataops-bucket/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar,gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar \
+            --jars=gs://vale-dataops-bucket/libs/delta-spark_2.12-3.2.0.jar,gs://vale-dataops-bucket/libs/delta-storage-3.0.0.jar,gs://vale-dataops-bucket/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar,gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar \
             -- gs://vale-dataops-bucket/data/customer_data_dirty.csv gs://vale-dataops-bucket/data/payment_data_dirty.csv
 
 
