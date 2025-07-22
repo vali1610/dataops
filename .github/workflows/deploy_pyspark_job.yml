@@ -56,7 +56,7 @@ jobs:
             --cluster=vale-dataproc \
             --region=europe-west1 \
             --project=dataops-466411 \
-            --jars=gs://spark-lib/bigquery/spark-bigquery-with-dependencies_2.12-0.26.0.jar \
-            --properties="https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.4.0/delta-core_2.12-2.4.0.jar" \
+            --jars=https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.4.0/delta-core_2.12-2.4.0.jar,gs://spark-lib/bigquery/spark-bigquery-with-dependencies_2.12-0.26.0.jar \
             -- \
             gs://vale-dataops-bucket/data/customer_data_dirty.csv gs://vale-dataops-bucket/data/payment_data_dirty.csv
+
