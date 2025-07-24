@@ -27,4 +27,4 @@ jobs:
 
       - name: Upload DAGs to Composer bucket
         run: |
-          gsutil -m cp -r dags/* gs://europe-west1-vale-composer-<bucket-id>/dags/
+          gsutil -m cp -r dags/* gs://europe-west1-vale-composer-d9e00846-bucket/dags/
