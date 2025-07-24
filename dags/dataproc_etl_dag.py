@@ -45,7 +45,7 @@ with models.DAG(
             "pyspark_job": {
                 "main_python_file_uri": PYSPARK_URI,
                 "args": [CSV1, CSV2],
-            },
-            "jar_file_uris": JARS
+                "jar_file_uris": JARS
+            }
         }
     )
