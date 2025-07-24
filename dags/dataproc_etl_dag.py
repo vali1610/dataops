@@ -44,11 +44,11 @@ with models.DAG(
             "reference": {"job_id": "spark_job_{{ ts_nodash }}"},
             "pyspark_job": {
                 "main_python_file_uri": PYSPARK_URI,
+                "jar_file_uris": JARS,
                 "args": [
                     CSV1,
                     CSV2
                 ],
             },
         },
-        jars=JARS,
     )
