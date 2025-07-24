@@ -1,0 +1,30 @@
+name: Deploy DAG to Composer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'dags/**'
+
+jobs:
+  deploy-dag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Authenticate with GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: dataops-466411
+
+      - name: Upload DAGs to Composer bucket
+        run: |
+          gsutil -m cp -r dags/* gs://europe-west1-vale-composer-<bucket-id>/dags/
