@@ -20,7 +20,7 @@ JARS = [
 ]
 
 default_args = {
-    "owner": "valentina",
+    "owner": "airflow",
     "depends_on_past": False,
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
@@ -35,17 +35,28 @@ with models.DAG(
     tags=["dataproc", "spark", "etl"],
 ) as dag:
 
-    run_spark_etl = DataprocSubmitJobOperator(
-        task_id="run_spark_etl",
+    submit_spark_etl_job = DataprocSubmitJobOperator(
+        task_id="submit_spark_etl_job",
         project_id=PROJECT_ID,
         region=REGION,
         job={
-            "placement": {"cluster_name": CLUSTER_NAME},
             "reference": {"job_id": "spark_job_{{ ts_nodash }}"},
+            "placement": {"cluster_name": CLUSTER_NAME},
             "pyspark_job": {
                 "main_python_file_uri": PYSPARK_URI,
                 "args": [CSV1, CSV2],
-                "jar_file_uris": JARS, 
+                "jar_file_uris": JARS,
+                "properties": {
+                    "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                },
             },
-        },
+            "logging_config": {
+                "driver_log_levels": {
+                    "root": "INFO"
+                }
+            },
+            "driver_output_resource_uri": f"gs://{BUCKET}/logs/spark_driver_{{{{ ts_nodash }}}}.log"
+        }
     )
