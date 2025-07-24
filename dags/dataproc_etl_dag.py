@@ -7,12 +7,12 @@ PROJECT_ID = "dataops-466411"
 REGION = "europe-west1"
 CLUSTER_NAME = "vale-dataproc"
 BUCKET = "vale-dataops-bucket"
-TEMP_BUCKET = BUCKET
 
 PYSPARK_URI = f"gs://{BUCKET}/jobs/pyspark_job.py"
 CSV1 = f"gs://{BUCKET}/data/customer_data_dirty.csv"
 CSV2 = f"gs://{BUCKET}/data/payment_data_dirty.csv"
 
+# JARs separate prin virgulă
 JARS = ",".join([
     f"gs://{BUCKET}/libs/delta-spark_2.12-3.2.0.jar",
     f"gs://{BUCKET}/libs/delta-storage-3.0.0.jar",
@@ -48,16 +48,9 @@ with models.DAG(
                 "args": [
                     CSV1,
                     CSV2,
-                    "--jars", JARS
+                    "--jars", JARS  # important să fie în args
                 ]
-            },
-            "scheduling": {},
+            }
         },
         gcp_conn_id="google_cloud_default",
-        location=REGION,
-        job_error_states=["ERROR", "CANCELLED"],
-        timeout=600,  # 10 min
-        result_retry=2,
-        result_retry_delay=timedelta(seconds=15),
-        deferrable=False,
     )
