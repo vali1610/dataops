@@ -1,44 +1,64 @@
 from airflow import models
 from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator
 from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 
-# Argumentele scriptului PySpark
-CUSTOMER_PATH = "gs://vale-dataops-bucket/data/customer_data_dirty.csv"
-PAYMENT_PATH = "gs://vale-dataops-bucket/data/payment_data_dirty.csv"
+from datetime import timedelta
 
-PYSPARK_JOB = {
-    "reference": {"project_id": "dataops-466411"},
-    "placement": {"cluster_name": "vale-dataproc"},
-    "pyspark_job": {
-        "main_python_file_uri": "gs://vale-dataops-bucket/jobs/pyspark_job.py",
-        "args": [CUSTOMER_PATH, PAYMENT_PATH],
-        "jar_file_uris": [
-            "gs://vale-dataops-bucket/libs/delta-spark_2.12-3.2.0.jar",
-            "gs://vale-dataops-bucket/libs/delta-storage-3.0.0.jar",
-            "gs://vale-dataops-bucket/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar",
-            "gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar"
-        ],
-        "properties": {
-            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
-            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-            "spark.serializer": "org.apache.spark.serializer.KryoSerializer"
-        },
-    },
+PROJECT_ID = "dataops-466411"
+REGION = "europe-west1"
+CLUSTER_NAME = "vale-dataproc"
+BUCKET = "vale-dataops-bucket"
+
+# GCS path to your pyspark script
+PYSPARK_URI = f"gs://{BUCKET}/jobs/pyspark_job.py"
+CSV1 = f"gs://{BUCKET}/data/customer_data_dirty.csv"
+CSV2 = f"gs://{BUCKET}/data/payment_data_dirty.csv"
+
+# JARs for Delta, Hudi, Iceberg
+JARS = [
+    f"gs://{BUCKET}/libs/delta-spark_2.12-3.2.0.jar",
+    f"gs://{BUCKET}/libs/delta-storage-3.0.0.jar",
+    f"gs://{BUCKET}/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar",
+    f"gs://{BUCKET}/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar",
+]
+
+default_args = {
+    "owner": "airflow",
+    "depends_on_past": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
 }
 
 with models.DAG(
-    "dataproc_etl_pipeline",
-    schedule_interval=None,  # can be changed to scheduled, but it is expensive $$
+    dag_id="dataproc_etl_pipeline",
+    default_args=default_args,
     start_date=days_ago(1),
+    schedule_interval=None,  
     catchup=False,
-    tags=["dataproc", "etl", "spark"],
+    tags=["dataproc", "spark", "etl"],
 ) as dag:
 
-    run_dataproc_job = DataprocSubmitJobOperator(
+    submit_spark_etl_job = DataprocSubmitJobOperator(
         task_id="submit_spark_etl_job",
-        job=PYSPARK_JOB,
-        region="europe-west1",
-        project_id="dataops-466411",
+        project_id=PROJECT_ID,
+        region=REGION,
+        job={
+            "placement": {"cluster_name": CLUSTER_NAME},
+            "pyspark_job": {
+                "main_python_file_uri": PYSPARK_URI,
+                "args": [CSV1, CSV2],
+                "jar_file_uris": JARS,
+                "properties": {
+                    "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                },
+            },
+            "reference": {
+                "job_id": "spark_job_{{ ts_nodash }}"
+            },
+        },
     )
 
-    run_dataproc_job
+    submit_spark_etl_job
