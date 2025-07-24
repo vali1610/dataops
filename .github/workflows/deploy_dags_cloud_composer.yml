@@ -1,12 +1,18 @@
 name: Deploy DAG to Composer
 
+# on:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - 'dags/**'
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'dags/**'
-
+  workflow_dispatch:
+    inputs:
+      bucket_name:
+        description: "GCS Compose Bucket Name"
+        required: true
+        default: "europe-west1-vale-composer-d9e00846-bucket"
 jobs:
   deploy-dag:
     runs-on: ubuntu-latest
@@ -26,5 +32,5 @@ jobs:
           project_id: dataops-466411
 
       - name: Upload DAGs to Composer bucket
-        run: |
-          gsutil -m cp -r dags/* gs://europe-west1-vale-composer-d9e00846-bucket/dags/
+        run: | 
+          gsutil -m cp -r dags/* gs://${{ github.event.inputs.bucket_name }}/dags/
