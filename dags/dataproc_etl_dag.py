@@ -3,24 +3,27 @@ from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobO
 from airflow.utils.dates import days_ago
 from datetime import timedelta
 
+# Configurări generale
 PROJECT_ID = "dataops-466411"
 REGION = "europe-west1"
 CLUSTER_NAME = "vale-dataproc"
 BUCKET = "vale-dataops-bucket"
 
+# Căi GCS
 PYSPARK_URI = f"gs://{BUCKET}/jobs/pyspark_job.py"
 CSV1 = f"gs://{BUCKET}/data/customer_data_dirty.csv"
 CSV2 = f"gs://{BUCKET}/data/payment_data_dirty.csv"
 
-JARS = [
+# Lista JAR-urilor pentru Delta, Hudi, Iceberg
+JARS = ",".join([
     f"gs://{BUCKET}/libs/delta-spark_2.12-3.2.0.jar",
     f"gs://{BUCKET}/libs/delta-storage-3.0.0.jar",
     f"gs://{BUCKET}/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar",
-    f"gs://{BUCKET}/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar",
-]
+    f"gs://{BUCKET}/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar"
+])
 
 default_args = {
-    "owner": "airflow",
+    "owner": "valentina",
     "depends_on_past": False,
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
@@ -35,28 +38,26 @@ with models.DAG(
     tags=["dataproc", "spark", "etl"],
 ) as dag:
 
-    submit_spark_etl_job = DataprocSubmitJobOperator(
-        task_id="submit_spark_etl_job",
+    spark_job = DataprocSubmitJobOperator(
+        task_id="run_spark_etl",
         project_id=PROJECT_ID,
         region=REGION,
         job={
-            "reference": {"job_id": "spark_job_{{ ts_nodash }}"},
             "placement": {"cluster_name": CLUSTER_NAME},
             "pyspark_job": {
                 "main_python_file_uri": PYSPARK_URI,
                 "args": [CSV1, CSV2],
-                "jar_file_uris": JARS,
-                "properties": {
-                    "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
-                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
-                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-                },
             },
-            "logging_config": {
-                "driver_log_levels": {
-                    "root": "INFO"
-                }
+            "reference": {
+                "job_id": f"spark_job_{{{{ ts_nodash }}}}"
             },
-            "driver_output_resource_uri": f"gs://{BUCKET}/logs/spark_driver_{{{{ ts_nodash }}}}.log"
+            "labels": {
+                "creator": "airflow",
+                "purpose": "etl-pipeline"
+            }
+        },
+        gcp_conn_id="google_cloud_default",
+        params={
+            "jar_file_uris": JARS
         }
     )
