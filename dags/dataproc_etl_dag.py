@@ -41,13 +41,11 @@ with models.DAG(
         region=REGION,
         job={
             "placement": {"cluster_name": CLUSTER_NAME},
+            "reference": {"job_id": "spark_job_{{ ts_nodash }}"},
             "pyspark_job": {
                 "main_python_file_uri": PYSPARK_URI,
                 "args": [CSV1, CSV2],
-                "jar_file_uris": JARS,
             },
-            "reference": {
-                "job_id": "spark_job_{{ ts_nodash }}"
-            },
-        },
+            "jar_file_uris": JARS
+        }
     )
