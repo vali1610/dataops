@@ -1,63 +1,26 @@
-from airflow import models
-from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator
-from airflow.utils.dates import days_ago
-from datetime import timedelta
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from datetime import datetime
 
-# Configurări generale
-PROJECT_ID = "dataops-466411"
-REGION = "europe-west1"
-CLUSTER_NAME = "vale-dataproc"
-BUCKET = "vale-dataops-bucket"
-
-# Căi GCS
-PYSPARK_URI = f"gs://{BUCKET}/jobs/pyspark_job.py"
-CSV1 = f"gs://{BUCKET}/data/customer_data_dirty.csv"
-CSV2 = f"gs://{BUCKET}/data/payment_data_dirty.csv"
-
-# Lista JAR-urilor pentru Delta, Hudi, Iceberg
-JARS = ",".join([
-    f"gs://{BUCKET}/libs/delta-spark_2.12-3.2.0.jar",
-    f"gs://{BUCKET}/libs/delta-storage-3.0.0.jar",
-    f"gs://{BUCKET}/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar",
-    f"gs://{BUCKET}/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar"
-])
-
-default_args = {
-    "owner": "valentina",
-    "depends_on_past": False,
-    "retries": 1,
-    "retry_delay": timedelta(minutes=5),
-}
-
-with models.DAG(
-    dag_id="dataproc_etl_pipeline",
-    default_args=default_args,
-    start_date=days_ago(1),
+with DAG(
+    dag_id='run_spark_etl_fallback',
+    start_date=datetime(2025, 7, 24),
     schedule_interval=None,
     catchup=False,
-    tags=["dataproc", "spark", "etl"],
+    tags=['spark', 'dataproc', 'fallback']
 ) as dag:
 
-    spark_job = DataprocSubmitJobOperator(
-        task_id="run_spark_etl",
-        project_id=PROJECT_ID,
-        region=REGION,
-        job={
-            "placement": {"cluster_name": CLUSTER_NAME},
-            "pyspark_job": {
-                "main_python_file_uri": PYSPARK_URI,
-                "args": [CSV1, CSV2],
-            },
-            "reference": {
-                "job_id": f"spark_job_{{{{ ts_nodash }}}}"
-            },
-            "labels": {
-                "creator": "airflow",
-                "purpose": "etl-pipeline"
-            }
-        },
-        gcp_conn_id="google_cloud_default",
-        params={
-            "jar_file_uris": JARS
-        }
+    submit_spark_job = BashOperator(
+        task_id='submit_spark_job_direct',
+        bash_command='''
+        gcloud dataproc jobs submit pyspark gs://vale-dataops-bucket/jobs/pyspark_job.py \
+            --cluster=vale-dataproc \
+            --region=europe-west1 \
+            --jars=gs://vale-dataops-bucket/libs/delta-spark_2.12-3.2.0.jar,\
+                   gs://vale-dataops-bucket/libs/delta-storage-3.0.0.jar,\
+                   gs://vale-dataops-bucket/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar,\
+                   gs://vale-dataops-bucket/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar \
+            -- gs://vale-dataops-bucket/data/customer_data_dirty.csv \
+               gs://vale-dataops-bucket/data/payment_data_dirty.csv
+        '''
     )
