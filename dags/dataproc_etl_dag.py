@@ -12,13 +12,12 @@ PYSPARK_URI = f"gs://{BUCKET}/jobs/pyspark_job.py"
 CSV1 = f"gs://{BUCKET}/data/customer_data_dirty.csv"
 CSV2 = f"gs://{BUCKET}/data/payment_data_dirty.csv"
 
-# JARs separate prin virgulă
-JARS = ",".join([
+JARS = [
     f"gs://{BUCKET}/libs/delta-spark_2.12-3.2.0.jar",
     f"gs://{BUCKET}/libs/delta-storage-3.0.0.jar",
     f"gs://{BUCKET}/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar",
     f"gs://{BUCKET}/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar",
-])
+]
 
 default_args = {
     "owner": "valentina",
@@ -36,7 +35,7 @@ with models.DAG(
     tags=["dataproc", "spark", "etl"],
 ) as dag:
 
-    spark_job = DataprocSubmitJobOperator(
+    run_spark_etl = DataprocSubmitJobOperator(
         task_id="run_spark_etl",
         project_id=PROJECT_ID,
         region=REGION,
@@ -47,10 +46,9 @@ with models.DAG(
                 "main_python_file_uri": PYSPARK_URI,
                 "args": [
                     CSV1,
-                    CSV2,
-                    "--jars", JARS  # important să fie în args
-                ]
-            }
+                    CSV2
+                ],
+            },
         },
-        gcp_conn_id="google_cloud_default",
+        jars=JARS,
     )
