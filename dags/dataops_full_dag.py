@@ -89,7 +89,7 @@ with dag:
 
     notify_done = EmailOperator(
         task_id="notify_success",
-        to={email},
+        to="valentinaetti@yahoo.com",
         subject="Airflow Pipeline Executed Successfully",
         html_content="All steps (Ingest, Transform, Verify, Load) completed successfully.",
     )
