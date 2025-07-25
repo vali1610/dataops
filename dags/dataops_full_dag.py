@@ -2,81 +2,136 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from airflow.utils.trigger_rule import TriggerRule
+from datetime import timedelta, datetime
+import os
 
-from datetime import timedelta
-import pendulum
-
-DEFAULT_ARGS = {
-    "owner": "valentina",
-    "start_date": pendulum.datetime(2025, 7, 25, tz="UTC"),
-    "retries": 1,
-    "retry_delay": timedelta(minutes=2),
+default_args = {
+    'owner': 'valentina',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
 }
 
 PROJECT_ID = "dataops-466411"
 REGION = "europe-west1"
-CLUSTER = "vale-dataproc"
+CLUSTER_NAME = "vale-dataproc"
 BUCKET = "vale-dataops-bucket"
-JOB_DIR = f"gs://{BUCKET}/jobs"
-DATA_DIR = f"gs://{BUCKET}/data"
-OUTPUT_BASE = f"gs://{BUCKET}/output"
+JARS = ",".join([
+    f"gs://{BUCKET}/libs/delta-spark_2.12-3.2.0.jar",
+    f"gs://{BUCKET}/libs/delta-storage-3.0.0.jar",
+    f"gs://{BUCKET}/libs/hudi-spark3.5-bundle_2.12-1.0.2.jar",
+    f"gs://{BUCKET}/libs/iceberg-spark-runtime-3.5_2.12-1.5.0.jar"
+])
+DATA_PATH = f"gs://{BUCKET}/data"
+OUTPUT_PATH = f"gs://{BUCKET}/output"
+SCRIPT_PATH = f"gs://{BUCKET}/jobs"
+LOG_PATH = f"gs://{BUCKET}/logs/performance_metrics.csv"
+
+def upload_metrics(task_name, **kwargs):
+    ts = datetime.utcnow().isoformat()
+    duration = kwargs['ti'].xcom_pull(task_ids=task_name)
+    status = "warning" if duration and int(duration) > 300 else "success"
+    line = f"{ts},{task_name},{duration},{status}\n"
+    with open("/tmp/metrics.csv", "a") as f:
+        f.write(line)
+    os.system(f"gsutil cp /tmp/metrics.csv {LOG_PATH}")
 
 with DAG(
-    dag_id="dataops_pipeline_full",
-    default_args=DEFAULT_ARGS,
-    schedule_interval=None,
+    dag_id='dataproc_pipeline_complex',
+    default_args=default_args,
+    description='ETL Spark on Dataproc with performance tracking',
+    schedule_interval="@daily",
+    start_date=days_ago(1),
     catchup=False,
-    description="ETL orchestration with Dataproc and BigQuery",
-    tags=["dataops", "spark", "dag"],
+    tags=['spark', 'dataproc', 'monitoring'],
 ) as dag:
 
-    # Task: Ingest Data
     ingest = BashOperator(
-        task_id="ingest_data",
+        task_id='ingest',
         bash_command=f"""
-        gcloud dataproc jobs submit pyspark {JOB_DIR}/ingest.py \
-        --cluster={CLUSTER} \
-        --region={REGION} \
-        -- gs://{BUCKET}/data/customer_data_dirty.csv gs://{BUCKET}/data/payment_data_dirty.csv {OUTPUT_BASE}
-        """
+        start=$(date +%s)
+        gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/ingest.py \
+          --cluster={CLUSTER_NAME} \
+          --region={REGION} \
+          --jars={JARS} \
+          -- {DATA_PATH}/customer_data_dirty.csv {DATA_PATH}/payment_data_dirty.csv {OUTPUT_PATH}
+        end=$(date +%s)
+        echo $((end-start))
+        """,
+        do_xcom_push=True,
     )
 
-    # Task: Transform
+    log_ingest = PythonOperator(
+        task_id='log_ingest',
+        python_callable=upload_metrics,
+        op_kwargs={'task_name': 'ingest'},
+    )
+
     transform = BashOperator(
-        task_id="transform_data",
+        task_id='transform',
         bash_command=f"""
-        gcloud dataproc jobs submit pyspark {JOB_DIR}/transform.py \
-        --cluster={CLUSTER} \
-        --region={REGION} \
-        -- {OUTPUT_BASE}/temp {OUTPUT_BASE}
-        """
+        start=$(date +%s)
+        gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/transform.py \
+          --cluster={CLUSTER_NAME} \
+          --region={REGION} \
+          --jars={JARS} \
+          -- {OUTPUT_PATH}/temp {OUTPUT_PATH}
+        end=$(date +%s)
+        echo $((end-start))
+        """,
+        do_xcom_push=True,
     )
 
-    # Task: Verify
+    log_transform = PythonOperator(
+        task_id='log_transform',
+        python_callable=upload_metrics,
+        op_kwargs={'task_name': 'transform'},
+    )
+
     verify = BashOperator(
-        task_id="verify_outputs",
+        task_id='verify',
         bash_command=f"""
-        gcloud dataproc jobs submit pyspark {JOB_DIR}/verify.py \
-        --cluster={CLUSTER} \
-        --region={REGION} \
-        -- {OUTPUT_BASE}
-        """
+        start=$(date +%s)
+        gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/verify.py \
+          --cluster={CLUSTER_NAME} \
+          --region={REGION} \
+          --jars={JARS} \
+          -- {OUTPUT_PATH}
+        end=$(date +%s)
+        echo $((end-start))
+        """,
+        do_xcom_push=True,
     )
 
-    # Task: Load to BigQuery
-    load_bq = BashOperator(
-        task_id="load_to_bigquery",
-        bash_command=f"""
-        gcloud dataproc jobs submit pyspark {JOB_DIR}/load_to_bq.py \
-        --cluster={CLUSTER} \
-        --region={REGION} \
-        -- \
-        --project_id={PROJECT_ID} \
-        --dataset=dataops_dataset \
-        --customer_path={OUTPUT_BASE}/parquet/customer \
-        --payment_path={OUTPUT_BASE}/parquet/payment
-        """
+    log_verify = PythonOperator(
+        task_id='log_verify',
+        python_callable=upload_metrics,
+        op_kwargs={'task_name': 'verify'},
     )
 
-    ingest >> transform >> verify >> load_bq
+    load = BashOperator(
+        task_id='load',
+        bash_command=f"""
+        start=$(date +%s)
+        gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/load_to_bq.py \
+          --cluster={CLUSTER_NAME} \
+          --region={REGION} \
+          -- \
+          --project_id {PROJECT_ID} \
+          --dataset dataops_dataset \
+          --customer_path {OUTPUT_PATH}/temp/customer_clean \
+          --payment_path {OUTPUT_PATH}/temp/payment_clean
+        end=$(date +%s)
+        echo $((end-start))
+        """,
+        do_xcom_push=True,
+    )
+
+    log_load = PythonOperator(
+        task_id='log_load',
+        python_callable=upload_metrics,
+        op_kwargs={'task_name': 'load'},
+    )
+
+    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load

@@ -1,5 +1,7 @@
 from pyspark.sql import SparkSession
 import sys
+import time
+import json
 
 def init_spark():
     return SparkSession.builder.appName("Verify").getOrCreate()
@@ -8,8 +10,13 @@ if __name__ == "__main__":
     spark = init_spark()
     output_base = sys.argv[1]
 
+    results = []
+
     def verify(fmt, path_or_table, is_table=False):
         print(f"\nVerifying {fmt.upper()} from: {path_or_table}")
+        metadata = {"format": fmt, "path": path_or_table, "is_table": is_table}
+        start = time.time()
+
         try:
             if fmt == "iceberg":
                 spark.conf.set("spark.sql.catalog.gcs", "org.apache.iceberg.spark.SparkCatalog")
@@ -26,16 +33,45 @@ if __name__ == "__main__":
                 df = spark.read.parquet(path_or_table)
             else:
                 print(f"Unknown format: {fmt}")
+                metadata["status"] = "failed"
+                metadata["error"] = "Unknown format"
+                results.append(metadata)
                 return
+
             df.printSchema()
             df.show(5)
-            print(f"Row count: {df.count()}")
-        except Exception as e:
-            print(f"Failed to verify {fmt}: {e}")
 
-    #### Testing 
+            row_count = df.count()
+            duration = round(time.time() - start, 2)
+
+            print(f"Row count: {row_count}")
+            metadata.update({
+                "status": "success",
+                "row_count": row_count,
+                "duration_sec": duration
+            })
+
+        except Exception as e:
+            duration = round(time.time() - start, 2)
+            print(f"Failed to verify {fmt}: {e}")
+            metadata.update({
+                "status": "failed",
+                "error": str(e),
+                "duration_sec": duration
+            })
+
+        results.append(metadata)
+
     verify("csv", f"{output_base}/csv/customer")
     verify("parquet", f"{output_base}/parquet/customer")
     verify("delta", f"{output_base}/delta/customer")
     verify("hudi", f"{output_base}/hudi/customer")
     verify("iceberg", "gcs.db.customer", is_table=True)
+
+    metadata_path = f"{output_base}/metadata/verify_metadata.json"
+    (
+        spark
+        .createDataFrame([json.dumps(results)], "string")
+        .write.mode("overwrite")
+        .text(metadata_path)
+    )

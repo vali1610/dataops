@@ -1,17 +1,19 @@
 from pyspark.sql import SparkSession
 import sys
+import time
+import json
 
 def init_spark():
-    spark = SparkSession.builder \
+    return SparkSession.builder \
         .appName("Transform") \
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
         .getOrCreate()
-    return spark
 
 if __name__ == "__main__":
     spark = init_spark()
+    start_time = time.time()
 
     input_base = sys.argv[1]  # e.g., gs://.../temp/
     output_base = sys.argv[2]  # e.g., gs://.../output/
@@ -57,3 +59,23 @@ if __name__ == "__main__":
 
     customer_df.writeTo("gcs.db.customer").using("iceberg").createOrReplace()
     payment_df.writeTo("gcs.db.payment").using("iceberg").createOrReplace()
+
+    end_time = time.time()
+    metadata = {
+        "step": "transform",
+        "start_time": start_time,
+        "end_time": end_time,
+        "duration_sec": round(end_time - start_time, 2),
+        "records": {
+            "customer": customer_df.count(),
+            "payment": payment_df.count()
+        }
+    }
+
+    metadata_path = f"{output_base}/metadata/transform_metadata.json"
+    (
+        spark
+        .createDataFrame([json.dumps(metadata)], "string")
+        .write.mode("overwrite")
+        .text(metadata_path)
+    )

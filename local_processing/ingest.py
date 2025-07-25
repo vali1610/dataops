@@ -1,14 +1,15 @@
-# Data Ingestion Step
-
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, mean, to_date
 import sys
+import time
+import json
 
 def init_spark():
     return SparkSession.builder.appName("Ingest").getOrCreate()
 
 if __name__ == "__main__":
     spark = init_spark()
+    start_time = time.time()
 
     customer_path = sys.argv[1]
     payment_path = sys.argv[2]
@@ -39,5 +40,28 @@ if __name__ == "__main__":
                .filter((col("new_balance") >= 0) & (col("new_balance") < 2_000_000))
         return df
 
-    read_and_clean_customer(customer_path).write.mode("overwrite").parquet(f"{output_base}/temp/customer_clean")
-    read_and_clean_payment(payment_path).write.mode("overwrite").parquet(f"{output_base}/temp/payment_clean")
+    customer_df = read_and_clean_customer(customer_path)
+    payment_df = read_and_clean_payment(payment_path)
+
+    customer_df.write.mode("overwrite").parquet(f"{output_base}/temp/customer_clean")
+    payment_df.write.mode("overwrite").parquet(f"{output_base}/temp/payment_clean")
+
+    end_time = time.time()
+    metadata = {
+        "step": "ingest",
+        "start_time": start_time,
+        "end_time": end_time,
+        "duration_sec": round(end_time - start_time, 2),
+        "records": {
+            "customer": customer_df.count(),
+            "payment": payment_df.count()
+        }
+    }
+
+    metadata_path = f"{output_base}/metadata/ingest_metadata.json"
+    (
+        spark
+        .createDataFrame([json.dumps(metadata)], "string")
+        .write.mode("overwrite")
+        .text(metadata_path)
+    )
