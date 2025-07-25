@@ -1,97 +1,82 @@
-from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from airflow.operators.email import EmailOperator
-from airflow.utils.task_group import TaskGroup
+from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 
-default_args = {
+from datetime import timedelta
+import pendulum
+
+DEFAULT_ARGS = {
     "owner": "valentina",
-    "depends_on_past": False,
-    "retries": 2,
-    "retry_delay": timedelta(minutes=5),
-    "email_on_failure": True,
-    "email": ["valentinaetti@yahoo.com"],
+    "start_date": pendulum.datetime(2025, 7, 25, tz="UTC"),
+    "retries": 1,
+    "retry_delay": timedelta(minutes=2),
 }
 
-dag = DAG(
-    dag_id="dataops_pipeline_full",
-    default_args=default_args,
-    description="Full pipeline: ingest → transform → verify → load → notify",
-    schedule_interval="0 8 * * *",  # daily at 08:00
-    start_date=datetime(2025, 7, 25),
-    catchup=False,
-    tags=["spark", "bq", "gcs", "airflow"],
-)
-
-BUCKET = "gs://vale-dataops-bucket"
-INPUT_CUSTOMER = f"{BUCKET}/data/customer_data_dirty.csv"
-INPUT_PAYMENT = f"{BUCKET}/data/payment_data_dirty.csv"
-TEMP_OUTPUT = f"{BUCKET}/temp"
-FINAL_OUTPUT = f"{BUCKET}/output"
 PROJECT_ID = "dataops-466411"
-BQ_DATASET = "valentina_dataset"
+REGION = "europe-west1"
+CLUSTER = "vale-dataproc"
+BUCKET = "vale-dataops-bucket"
+JOB_DIR = f"gs://{BUCKET}/jobs"
+DATA_DIR = f"gs://{BUCKET}/data"
+OUTPUT_BASE = f"gs://{BUCKET}/output"
 
-with dag:
+with DAG(
+    dag_id="dataops_pipeline_full",
+    default_args=DEFAULT_ARGS,
+    schedule_interval=None,
+    catchup=False,
+    description="ETL orchestration with Dataproc and BigQuery",
+    tags=["dataops", "spark", "dag"],
+) as dag:
 
-    def push_paths_to_xcom(ti):
-        ti.xcom_push(key="customer_input", value=INPUT_CUSTOMER)
-        ti.xcom_push(key="payment_input", value=INPUT_PAYMENT)
-        ti.xcom_push(key="temp_output", value=TEMP_OUTPUT)
-        ti.xcom_push(key="final_output", value=FINAL_OUTPUT)
-
-    prepare = PythonOperator(
-        task_id="prepare_xcom_values",
-        python_callable=push_paths_to_xcom,
+    # Task: Ingest Data
+    ingest = BashOperator(
+        task_id="ingest_data",
+        bash_command=f"""
+        gcloud dataproc jobs submit pyspark {JOB_DIR}/ingest.py \
+        --cluster={CLUSTER} \
+        --region={REGION} \
+        -- gs://{BUCKET}/data/customer_data_dirty.csv gs://{BUCKET}/data/payment_data_dirty.csv {OUTPUT_BASE}
+        """
     )
 
-    with TaskGroup("spark_etl") as spark_etl:
-        ingest = BashOperator(
-            task_id="ingest_data",
-            bash_command=(
-                f"spark-submit {BUCKET}/jobs/ingest.py "
-                "{{ ti.xcom_pull(task_ids='prepare_xcom_values', key='customer_input') }} "
-                "{{ ti.xcom_pull(task_ids='prepare_xcom_values', key='payment_input') }} "
-                "{{ ti.xcom_pull(task_ids='prepare_xcom_values', key='temp_output') }}"
-            ),
-        )
+    # Task: Transform
+    transform = BashOperator(
+        task_id="transform_data",
+        bash_command=f"""
+        gcloud dataproc jobs submit pyspark {JOB_DIR}/transform.py \
+        --cluster={CLUSTER} \
+        --region={REGION} \
+        -- {OUTPUT_BASE}/temp {OUTPUT_BASE}
+        """
+    )
 
-        transform = BashOperator(
-            task_id="transform_data",
-            bash_command=(
-                f"spark-submit {BUCKET}/jobs/transform.py "
-                "{{ ti.xcom_pull(task_ids='prepare_xcom_values', key='temp_output') }} "
-                "{{ ti.xcom_pull(task_ids='prepare_xcom_values', key='final_output') }}"
-            ),
-        )
+    # Task: Verify
+    verify = BashOperator(
+        task_id="verify_outputs",
+        bash_command=f"""
+        gcloud dataproc jobs submit pyspark {JOB_DIR}/verify.py \
+        --cluster={CLUSTER} \
+        --region={REGION} \
+        -- {OUTPUT_BASE}
+        """
+    )
 
-        verify = BashOperator(
-            task_id="verify_outputs",
-            bash_command=(
-                f"spark-submit {BUCKET}/jobs/verify.py "
-                "{{ ti.xcom_pull(task_ids='prepare_xcom_values', key='final_output') }}"
-            ),
-        )
-
-        ingest >> transform >> verify
-
-    load_to_bq = BashOperator(
+    # Task: Load to BigQuery
+    load_bq = BashOperator(
         task_id="load_to_bigquery",
-        bash_command=(
-            f"spark-submit {BUCKET}/jobs/load_to_bq.py "
-            "--project_id {{ params.project }} "
-            "--dataset {{ params.dataset }} "
-            "--customer_path {{ ti.xcom_pull(task_ids='prepare_xcom_values', key='final_output') }}/parquet/customer "
-            "--payment_path {{ ti.xcom_pull(task_ids='prepare_xcom_values', key='final_output') }}/parquet/payment"
-        ),
-        params={"project": PROJECT_ID, "dataset": BQ_DATASET},
+        bash_command=f"""
+        gcloud dataproc jobs submit pyspark {JOB_DIR}/load_to_bq.py \
+        --cluster={CLUSTER} \
+        --region={REGION} \
+        -- \
+        --project_id={PROJECT_ID} \
+        --dataset=dataops_dataset \
+        --customer_path={OUTPUT_BASE}/parquet/customer \
+        --payment_path={OUTPUT_BASE}/parquet/payment
+        """
     )
 
-    notify_done = EmailOperator(
-        task_id="notify_success",
-        to="valentinaetti@yahoo.com",
-        subject="Airflow Pipeline Executed Successfully",
-        html_content="All steps (Ingest, Transform, Verify, Load) completed successfully.",
-    )
-
-    prepare >> spark_etl >> load_to_bq >> notify_done
+    ingest >> transform >> verify >> load_bq
