@@ -12,7 +12,7 @@ on:
       bucket_name:
         description: "GCS Compose Bucket Name"
         required: true
-        default: "europe-west1-vale-composer-d9e00846-bucket"
+        default: "europe-west1-vale-composer-b9f10208-bucket"
 jobs:
   deploy-dag:
     runs-on: ubuntu-latest
