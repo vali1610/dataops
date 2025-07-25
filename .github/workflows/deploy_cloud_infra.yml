@@ -31,6 +31,10 @@ on:
         description: "Dataproc number of workers"
         required: true
         default: "2"
+      bq_dataset_name:
+        description: "BigQuery dataset name"
+        required: true
+        default: "dataops_dataset"
 
 jobs:
   deploy:
@@ -75,5 +79,6 @@ jobs:
             -var="composer_name=${{ github.event.inputs.composer_name }}" \
             -var="composer_image_version=${{ github.event.inputs.composer_image_version }}" \
             -var="dataproc_name=${{ github.event.inputs.dataproc_name }}" \
-            -var="dataproc_num_workers=${{ github.event.inputs.dataproc_num_workers }}"
+            -var="dataproc_num_workers=${{ github.event.inputs.dataproc_num_workers }}"\
+            -var="bq_dataset_name"=${{ github.event.inputs.bq_dataset_name }}
         timeout-minutes: 30

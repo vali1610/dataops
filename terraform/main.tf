@@ -25,3 +25,10 @@ module "dataproc" {
   region      = var.region
   num_workers = var.dataproc_num_workers
 }
+
+module "bigquery" {
+  source          = "./modules/bigquery"
+  project_id      = var.project_id
+  bq_dataset_name = var.bq_dataset_name
+  location        = var.region
+}

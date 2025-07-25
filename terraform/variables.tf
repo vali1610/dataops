@@ -12,3 +12,7 @@ variable "composer_sa_email" {
   description = "Email of the service account used for Composer"
   type        = string
 }
+variable "bq_dataset_name" {
+  type        = string
+  description = "BigQuery dataset name"
+}
