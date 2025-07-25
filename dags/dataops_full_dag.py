@@ -40,7 +40,7 @@ with DAG(
 ) as dag:
 
     ingest_task = BashOperator(
-        task_id='spark_etl_ingest_data',
+        task_id='spark_etl_ingest_task',
         bash_command=f"""
         gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/ingest.py \
         --cluster={CLUSTER_NAME} \
@@ -54,7 +54,7 @@ with DAG(
     )
 
     transform_task = BashOperator(
-        task_id='spark_etl_transform_data',
+        task_id='spark_etl_transform_task',
         bash_command=f"""
         gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/transform.py \
         --cluster={CLUSTER_NAME} \
@@ -91,5 +91,21 @@ with DAG(
         --payment_path {OUTPUT_PATH}/temp/payment_clean
         """
     )
+    send_success_email = EmailOperator(
+            task_id='send_success_email',
+            to='fercal.petru@gmail.com',
+            subject='✅ DataOps DAG Successful',
+            html_content='The DAG <b>dataops_pipeline_full</b> ran successfully.',
+            trigger_rule=TriggerRule.ALL_SUCCESS,
+        )
 
+    send_failure_email = EmailOperator(
+        task_id='send_failure_email',
+        to='fercal.petru@gmail.com',
+        subject='❌ DataOps DAG Failed',
+        html_content='The DAG <b>dataops_pipeline_full</b> failed. Please investigate the logs.',
+        trigger_rule=TriggerRule.ONE_FAILED,
+    )
     ingest_task >> transform_task >> verify_task >> load_task
+    [ingest_task, transform_task, verify_task, load_task] >> send_success_email
+    [ingest_task, transform_task, verify_task, load_task] >> send_failure_email
