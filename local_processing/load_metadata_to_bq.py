@@ -22,12 +22,15 @@ def parse_json_line(line, path):
         if isinstance(parsed, dict):
             return [parsed]
         elif isinstance(parsed, list):
+            for item in parsed:
+                if "step" not in item:
+                    item["step"] = "verify"
             return parsed
         else:
-            print(f"Tip necunoscut în fișierul {path}: {type(parsed)}")
+            print(f"⚠️ Tip necunoscut în fișierul {path}: {type(parsed)}")
             return []
     except Exception as e:
-        print(f"Eroare la parsare JSON în {path}: {e}")
+        print(f"⚠️ Eroare la parsare JSON în {path}: {e}")
         return []
 
 def flatten_record(data, run_date, path):
@@ -52,7 +55,7 @@ all_rows = []
 today_str = datetime.utcnow().strftime("%Y-%m-%d")
 
 for path in input_paths:
-    print(f"\nProcesare fișier: {path}")
+    print(f"\n📄 Procesare fișier: {path}")
     try:
         df = spark.read.text(path)
         lines = df.collect()
@@ -62,10 +65,10 @@ for path in input_paths:
                 flat = flatten_record(rec, today_str, path)
                 all_rows.append(flat)
     except Exception as e:
-        print(f"Eroare la citirea fișierului {path}: {e}")
+        print(f"❌ Eroare la citirea fișierului {path}: {e}")
 
 if not all_rows:
-    print(" Nu s-au găsit date valide. Ieșire.")
+    print("⚠️ Nu s-au găsit date valide. Ieșire.")
     sys.exit(1)
 
 schema = StructType([
@@ -84,10 +87,11 @@ schema = StructType([
     StructField("row_count", IntegerType(), True),
 ])
 
-print(f"Total rânduri procesate: {len(all_rows)}")
+print(f"\n✅ Total rânduri procesate: {len(all_rows)}")
+
 final_df = spark.createDataFrame(all_rows, schema=schema)
 
-print("Scriere în BigQuery...")
+print("🚀 Scriere în BigQuery...")
 final_df.write \
     .format("bigquery") \
     .option("table", f"{project_id}:{dataset}.{table}") \
@@ -95,6 +99,6 @@ final_df.write \
     .mode("append") \
     .save()
 
-print("Upload complet cu succes!")
+print("✅ Upload complet cu succes!")
 
 spark.stop()
