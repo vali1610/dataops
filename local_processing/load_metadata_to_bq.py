@@ -1,80 +1,100 @@
-from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, FloatType, LongType, IntegerType
+import sys
 import json
 from datetime import datetime
-import sys
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType, FloatType, IntegerType
 
-def parse_json_string(json_str):
-    """ Încearcă să parseeze fie un dict, fie o listă de dicturi din string. """
-    parsed_rows = []
+project_id = sys.argv[1]
+dataset = sys.argv[2]
+table = sys.argv[3]
+input_paths = sys.argv[4:]
+
+print(f"Project: {project_id}, Dataset: {dataset}, Table: {table}")
+print("Fișiere de procesat:")
+for path in input_paths:
+    print(f"  - {path}")
+
+spark = SparkSession.builder.appName("LoadMetadataToBigQuery").getOrCreate()
+
+def parse_json_line(line, path):
     try:
-        obj = json.loads(json_str)
-        if isinstance(obj, dict):
-            parsed_rows.append(obj)
-        elif isinstance(obj, list):
-            parsed_rows.extend(obj)
+        parsed = json.loads(line)
+        if isinstance(parsed, dict):
+            return [parsed]
+        elif isinstance(parsed, list):
+            return parsed
         else:
-            print(f"⚠️ Obiect JSON invalid: {obj}")
-    except json.JSONDecodeError as e:
-        print(f"⚠️ Eroare la parsing JSON: {e}\n➡️ Conținut: {json_str}")
-    return parsed_rows
+            print(f"Tip necunoscut în fișierul {path}: {type(parsed)}")
+            return []
+    except Exception as e:
+        print(f"Eroare la parsare JSON în {path}: {e}")
+        return []
 
-def normalize_row(row_dict):
-    """ Normalizează dictul pentru BigQuery: convertește în format tabelar unitar. """
-    base = {
-        "run_date": datetime.utcnow().date().isoformat(),
-        "step": row_dict.get("step", row_dict.get("format", "unknown")),
-        "start_time": row_dict.get("start_time"),
-        "end_time": row_dict.get("end_time"),
-        "duration_sec": row_dict.get("duration_sec"),
-        "customer_records": None,
-        "payment_records": None,
-        "format": row_dict.get("format"),
-        "path": row_dict.get("path"),
-        "is_table": row_dict.get("is_table"),
-        "status": row_dict.get("status", "success"),
-        "error": row_dict.get("error"),
-        "row_count": row_dict.get("row_count")
+def flatten_record(data, run_date, path):
+    record = {
+        "run_date": run_date,
+        "step": data.get("step"),
+        "start_time": data.get("start_time"),
+        "end_time": data.get("end_time"),
+        "duration_sec": data.get("duration_sec"),
+        "customer_records": data.get("records", {}).get("customer") if isinstance(data.get("records"), dict) else None,
+        "payment_records": data.get("records", {}).get("payment") if isinstance(data.get("records"), dict) else None,
+        "format": data.get("format"),
+        "path": data.get("path") or path,
+        "is_table": data.get("is_table"),
+        "status": data.get("status"),
+        "error": data.get("error"),
+        "row_count": data.get("row_count")
     }
+    return record
 
-    records = row_dict.get("records", {})
-    if isinstance(records, dict):
-        base["customer_records"] = records.get("customer")
-        base["payment_records"] = records.get("payment")
+all_rows = []
+today_str = datetime.utcnow().strftime("%Y-%m-%d")
 
-    return base
-
-if __name__ == "__main__":
-    spark = SparkSession.builder.appName("LoadMetadataToBQ").getOrCreate()
-
-    project_id = sys.argv[1]
-    dataset = sys.argv[2]
-    table = sys.argv[3]
-    input_paths = sys.argv[4:]
-
-    all_rows = []
-
-    for path in input_paths:
-        print(f"📄 Procesare fișier: {path}")
+for path in input_paths:
+    print(f"\nProcesare fișier: {path}")
+    try:
         df = spark.read.text(path)
-        for row in df.collect():
-            line = row["value"]
-            for parsed_dict in parse_json_string(line):
-                normalized = normalize_row(parsed_dict)
-                all_rows.append(normalized)
+        lines = df.collect()
+        for row in lines:
+            json_records = parse_json_line(row["value"], path)
+            for rec in json_records:
+                flat = flatten_record(rec, today_str, path)
+                all_rows.append(flat)
+    except Exception as e:
+        print(f"Eroare la citirea fișierului {path}: {e}")
 
-    if not all_rows:
-        print("❌ Nu s-au găsit rânduri valide. Ieșire.")
-        sys.exit(1)
+if not all_rows:
+    print(" Nu s-au găsit date valide. Ieșire.")
+    sys.exit(1)
 
-    final_df = spark.createDataFrame(all_rows)
-    print("✅ Scriere în BigQuery...")
+schema = StructType([
+    StructField("run_date", StringType(), True),
+    StructField("step", StringType(), True),
+    StructField("start_time", FloatType(), True),
+    StructField("end_time", FloatType(), True),
+    StructField("duration_sec", FloatType(), True),
+    StructField("customer_records", IntegerType(), True),
+    StructField("payment_records", IntegerType(), True),
+    StructField("format", StringType(), True),
+    StructField("path", StringType(), True),
+    StructField("is_table", StringType(), True),
+    StructField("status", StringType(), True),
+    StructField("error", StringType(), True),
+    StructField("row_count", IntegerType(), True),
+])
 
-    final_df.write \
-        .format("bigquery") \
-        .option("table", f"{project_id}:{dataset}.{table}") \
-        .option("writeMethod", "direct") \
-        .mode("append") \
-        .save()
+print(f"Total rânduri procesate: {len(all_rows)}")
+final_df = spark.createDataFrame(all_rows, schema=schema)
 
-    print("✅ Upload complet cu succes!")
+print("Scriere în BigQuery...")
+final_df.write \
+    .format("bigquery") \
+    .option("table", f"{project_id}:{dataset}.{table}") \
+    .option("writeMethod", "direct") \
+    .mode("append") \
+    .save()
+
+print("Upload complet cu succes!")
+
+spark.stop()
