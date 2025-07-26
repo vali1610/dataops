@@ -188,4 +188,4 @@ with DAG(
     )
 
 
-    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata >> check_metadata >> 
+    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata >> check_metadata >> send_email
