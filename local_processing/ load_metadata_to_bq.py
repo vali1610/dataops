@@ -1,13 +1,16 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.types import *
 import json
 from datetime import datetime
 import sys
 
 def parse_json_row(json_str):
-    data = json.loads(json_str)
+    try:
+        data = json.loads(json_str)
+    except Exception as e:
+        print(f"JSON decode error: {e}")
+        return []
 
-    if isinstance(data, list):
+    if isinstance(data, list):  # verify case
         rows = []
         for item in data:
             rows.append({
@@ -26,20 +29,24 @@ def parse_json_row(json_str):
             })
         return rows
 
-    return [{
-        "step": data.get("step"),
-        "start_time": data.get("start_time"),
-        "end_time": data.get("end_time"),
-        "duration_sec": data.get("duration_sec"),
-        "customer_records": data.get("records", {}).get("customer"),
-        "payment_records": data.get("records", {}).get("payment"),
-        "format": None,
-        "path": None,
-        "is_table": None,
-        "status": data.get("status", "success"),
-        "error": data.get("error", None),
-        "run_date": datetime.utcnow().date().isoformat()
-    }]
+    elif isinstance(data, dict):  # ingest / transform case
+        return [{
+            "step": data.get("step"),
+            "start_time": data.get("start_time"),
+            "end_time": data.get("end_time"),
+            "duration_sec": data.get("duration_sec"),
+            "customer_records": data.get("records", {}).get("customer"),
+            "payment_records": data.get("records", {}).get("payment"),
+            "format": None,
+            "path": None,
+            "is_table": None,
+            "status": data.get("status", "success"),
+            "error": data.get("error", None),
+            "run_date": datetime.utcnow().date().isoformat()
+        }]
+    else:
+        print(f"Unexpected JSON structure: {type(data)}")
+        return []
 
 if __name__ == "__main__":
     spark = SparkSession.builder.appName("LoadMetadata").getOrCreate()
@@ -55,10 +62,13 @@ if __name__ == "__main__":
             parsed_rows = parse_json_row(row["value"])
             all_rows.extend(parsed_rows)
 
-    final_df = spark.createDataFrame(all_rows)
-    final_df.write \
-        .format("bigquery") \
-        .option("table", f"{project_id}:{dataset}.{table}") \
-        .option("writeMethod", "direct") \
-        .mode("append") \
-        .save()
+    if all_rows:
+        final_df = spark.createDataFrame(all_rows)
+        final_df.write \
+            .format("bigquery") \
+            .option("table", f"{project_id}:{dataset}.{table}") \
+            .option("writeMethod", "direct") \
+            .mode("append") \
+            .save()
+    else:
+        print("No rows to write.")
