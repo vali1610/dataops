@@ -185,7 +185,7 @@ with DAG(
         to="valentinaetti@yahoo.com",
         subject="[ALERT] DataOps Pipeline - Error or performance issues",
         html_content="{{ ti.xcom_pull(task_ids='check_metadata_for_alert', key='alert_body') }}",
-        trigger_rule="all_success",  
+        trigger_rule="all_done",  
     )
 
 
