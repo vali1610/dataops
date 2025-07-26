@@ -1,74 +1,47 @@
-from pyspark.sql import SparkSession
-import json
-from datetime import datetime
 import sys
+import json
+from pyspark.sql import SparkSession
 
-def parse_json_row(json_str):
+project_id = sys.argv[1]
+dataset_id = sys.argv[2]
+table_id = sys.argv[3]
+input_paths = sys.argv[4:]
+
+print("DEBUG: Script started with args:", sys.argv, file=sys.stderr)
+
+def parse_json_row(row):
     try:
-        data = json.loads(json_str)
+        data = json.loads(row)
+        print("DEBUG: Parsed row =", data, file=sys.stderr)
+
+        if isinstance(data, dict):
+            return {
+                "step": data.get("step"),
+                "start_time": data.get("start_time"),
+                "end_time": data.get("end_time"),
+                "duration_sec": data.get("duration_sec"),
+                "records": json.dumps(data.get("records")) if data.get("records") else None
+            }
+        elif isinstance(data, list):
+            print("WARNING: Skipping list-type row", file=sys.stderr)
+            return None
+        else:
+            print("WARNING: Unexpected row type", type(data), file=sys.stderr)
+            return None
     except Exception as e:
-        print(f"JSON decode error: {e}")
-        return []
+        print("ERROR parsing row:", row, "Exception:", e, file=sys.stderr)
+        return None
 
-    if isinstance(data, list):  # verify case
-        rows = []
-        for item in data:
-            rows.append({
-                "step": "verify",
-                "start_time": None,
-                "end_time": None,
-                "duration_sec": item.get("duration_sec"),
-                "customer_records": item.get("row_count") if "customer" in item.get("path", "") else None,
-                "payment_records": item.get("row_count") if "payment" in item.get("path", "") else None,
-                "format": item.get("format"),
-                "path": item.get("path"),
-                "is_table": item.get("is_table", False),
-                "status": item.get("status", "unknown"),
-                "error": None,
-                "run_date": datetime.utcnow().date().isoformat()
-            })
-        return rows
+spark = SparkSession.builder.appName("LoadMetadataToBQ").getOrCreate()
 
-    elif isinstance(data, dict):  # ingest / transform case
-        return [{
-            "step": data.get("step"),
-            "start_time": data.get("start_time"),
-            "end_time": data.get("end_time"),
-            "duration_sec": data.get("duration_sec"),
-            "customer_records": data.get("records", {}).get("customer"),
-            "payment_records": data.get("records", {}).get("payment"),
-            "format": None,
-            "path": None,
-            "is_table": None,
-            "status": data.get("status", "success"),
-            "error": data.get("error", None),
-            "run_date": datetime.utcnow().date().isoformat()
-        }]
-    else:
-        print(f"Unexpected JSON structure: {type(data)}")
-        return []
+rdd = spark.read.text(input_paths).rdd
+parsed = rdd.map(lambda row: parse_json_row(row["value"])).filter(lambda x: x is not None)
 
-if __name__ == "__main__":
-    spark = SparkSession.builder.appName("LoadMetadata").getOrCreate()
-    project_id = sys.argv[1]
-    dataset = sys.argv[2]
-    table = sys.argv[3]
-    gcs_paths = sys.argv[4:]
+df = spark.createDataFrame(parsed)
 
-    all_rows = []
-    for path in gcs_paths:
-        json_df = spark.read.text(path)
-        for row in json_df.collect():
-            parsed_rows = parse_json_row(row["value"])
-            all_rows.extend(parsed_rows)
+df.write.format("bigquery") \
+    .option("table", f"{project_id}:{dataset_id}.{table_id}") \
+    .mode("append") \
+    .save()
 
-    if all_rows:
-        final_df = spark.createDataFrame(all_rows)
-        final_df.write \
-            .format("bigquery") \
-            .option("table", f"{project_id}:{dataset}.{table}") \
-            .option("writeMethod", "direct") \
-            .mode("append") \
-            .save()
-    else:
-        print("No rows to write.")
+print("DEBUG: Load to BigQuery complete", file=sys.stderr)
