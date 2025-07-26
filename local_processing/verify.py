@@ -4,7 +4,12 @@ import time
 import json
 
 def init_spark():
-    return SparkSession.builder.appName("Verify").getOrCreate()
+    return SparkSession.builder \
+        .appName("Transform") \
+        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .getOrCreate()
 
 if __name__ == "__main__":
     spark = init_spark()
