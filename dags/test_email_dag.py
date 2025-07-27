@@ -11,7 +11,7 @@ def notify_slack():
     
     # Mesajul trimis pe Slack
     message = {
-        "text": "✅ Test Slack Webhook din DAG Airflow! Totul funcționează!🚀"
+        "text": "✅ Test Slack Webhook din DAG Airflow! Totul funcționează! 🚀"
     }
 
     response = requests.post(webhook_url, json=message)
