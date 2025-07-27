@@ -160,10 +160,12 @@ The DAG is responsible for executing the full end-to-end data pipeline using **D
 2. **Log Ingestion Metrics**  
    - Captures job execution time  
    - Stores structured logs in GCS `/logs/performance_metrics.csv`
+<img width="1016" height="609" alt="image" src="https://github.com/user-attachments/assets/c8710770-b0e5-4143-a0bc-32482ad48915" />
 
 3. **Apply Spark Transformations**  
    - Launches `transform.py` as a Spark job on Dataproc  
    - Applies business logic and outputs in 5 formats: CSV, Parquet, Delta, Hudi, Iceberg
+<img width="1725" height="822" alt="image" src="https://github.com/user-attachments/assets/abf7af98-3c6f-4f30-b850-5a0afc5a7362" />
 
 4. **Log Transformation Metrics**
 
@@ -172,6 +174,7 @@ The DAG is responsible for executing the full end-to-end data pipeline using **D
    - Ensures no silent errors occurred during writing
 
 6. **Log Verification Metrics**
+<img width="1366" height="898" alt="image" src="https://github.com/user-attachments/assets/1cffa26f-3f4b-43f7-bf8e-15b38ecf5c74" />
 
 7. **Load to BigQuery**  
    - Launches `load_to_bq.py` to load cleaned data into BigQuery  
@@ -182,6 +185,7 @@ The DAG is responsible for executing the full end-to-end data pipeline using **D
 9. **Load Metadata to BigQuery**  
    - Executes `load_metadata_to_bq.py`  
    - Centralizes all metadata from previous steps into BigQuery table `dataops_metadata.pipeline_runs`
+<img width="1683" height="845" alt="image" src="https://github.com/user-attachments/assets/843263d0-5a81-4816-935f-9fbe301cd398" />
 
 10. **Check for Alerts**  
     - Executes a shell script (`check_alert.sh`) to scan metadata logs for errors or anomalies  
@@ -190,6 +194,9 @@ The DAG is responsible for executing the full end-to-end data pipeline using **D
 11. **Notify via Slack**  
     - Uses Airflow’s `PythonOperator` to send an alert or success message to a Slack channel  
     - Slack webhook is configured as a Connection in Airflow (`slack_webhook`)
+<img width="1123" height="838" alt="image" src="https://github.com/user-attachments/assets/572078e4-97a8-4cb7-ab7d-24d27fa91e99" />
+<img width="1144" height="638" alt="image" src="https://github.com/user-attachments/assets/8c72794b-1219-4cfe-9beb-cc660f7c3f3b" />
+
 
 ---
 
