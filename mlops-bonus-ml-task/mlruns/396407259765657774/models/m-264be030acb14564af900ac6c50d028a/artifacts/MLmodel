@@ -1,0 +1,22 @@
+artifact_path: file:///Users/valentinabordei/Desktop/MLOPS/mlruns/396407259765657774/models/m-264be030acb14564af900ac6c50d028a/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.10.18
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.6.1
+mlflow_version: 3.1.4
+model_id: m-264be030acb14564af900ac6c50d028a
+model_size_bytes: 139880
+model_uuid: m-264be030acb14564af900ac6c50d028a
+prompts: null
+run_id: 6fa3d1be442942fbbb6740ca8afaf554
+utc_time_created: '2025-07-27 15:11:08.302318'
