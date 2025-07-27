@@ -14,21 +14,8 @@ This section demonstrates a full machine learning pipeline using XGBoost for bin
 
 ## Project Structure
 
-.
-├── data/
-│   ├── customer_clean.csv
-│   └── payment_clean.csv
-├── models/
-│   └── xgb_model.pkl
-├── notebooks/
-│   └── model_training.ipynb
-├── scripts/
-│   └── xgb_model_training.py
-├── mlruns/                 # MLflow tracking folder (optional in Git)
-├── requirements.txt
-└── README.md
+<img width="422" height="365" alt="image" src="https://github.com/user-attachments/assets/03a6bfc3-b73a-4dcf-80c8-872cd39772b4" />
 
----
 
 ## Setup Instructions
 
