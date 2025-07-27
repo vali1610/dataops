@@ -2,9 +2,11 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.operators.email import EmailOperator
+from airflow.hooks.base import BaseHook
 from airflow.utils.dates import days_ago
 from datetime import timedelta, datetime
 import os
+import requests
 
 default_args = {
     'owner': 'valentina',
@@ -46,10 +48,25 @@ def check_alert():
         content = f.read().strip()
     return content if content != "NO_ALERT" else None
 
+def notify_slack(**kwargs):
+    alert_msg = kwargs['ti'].xcom_pull(task_ids='check_metadata_for_alert')
+    conn = BaseHook.get_connection("slack_webhook")
+    webhook_url = conn.host + conn.extra_dejson.get("endpoint")
+
+    if alert_msg and alert_msg != "NO_ALERT":
+        text = f"🚨 *ALERT from DataOps Pipeline!*\n{alert_msg}"
+    else:
+        text = "✅ DataOps pipeline ran successfully and no alert was triggered. All good!"
+
+    payload = {"text": text}
+    response = requests.post(webhook_url, json=payload)
+    if response.status_code != 200:
+        raise ValueError(f"Slack notification failed: {response.status_code}, {response.text}")
+
 with DAG(
     dag_id='dataproc_pipeline_complex',
     default_args=default_args,
-    description='ETL Spark on Dataproc with performance tracking',
+    description='ETL Spark on Dataproc with performance tracking and Slack alerts',
     schedule_interval="@daily",
     start_date=days_ago(1),
     catchup=False,
@@ -160,7 +177,7 @@ with DAG(
         --cluster={CLUSTER_NAME} \
         --region={REGION} \
         -- \
-        {PROJECT_ID} dataops_dataset pipeline_metadata \
+        {PROJECT_ID} dataops_dataset pipeline_runs \
         {OUTPUT_PATH}/metadata/ingest_metadata.json/* \
         {OUTPUT_PATH}/metadata/transform_metadata.json/* \
         {OUTPUT_PATH}/metadata/verify_metadata.json/* \
@@ -181,4 +198,13 @@ with DAG(
         trigger_rule="all_done",
     )
 
-    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata >> check_alert_task >> send_email
+    notify_slack_task = PythonOperator(
+        task_id="notify_slack",
+        python_callable=notify_slack,
+        provide_context=True,
+        trigger_rule="all_done",
+    )
+
+    # DAG FLOW
+    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata
+    load_metadata >> check_alert_task >> [send_email, notify_slack_task]
