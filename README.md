@@ -1,3 +1,24 @@
+# End-to-End DataOps Architecture on GCP
+
+This project showcases a complete DataOps pipeline implemented on Google Cloud Platform (GCP).  
+It integrates modern cloud services (GCS, BigQuery, Dataproc, Composer), Terraform for infrastructure-as-code,  
+Apache Spark for scalable data processing, and Airflow for orchestration and monitoring.
+
+---
+
+## 📌 Architecture Diagram
+
+<img width="1226" height="785" alt="image" src="https://github.com/user-attachments/assets/847413eb-4e18-4252-a689-b36441f3c838" />
+
+
+The diagram above illustrates the main components of the solution:
+- **Infrastructure Layer:** Provisioned via Terraform, including GCS, BigQuery, Dataproc, and Composer.
+- **Processing Layer (Apache Spark):** Includes ingestion (`ingest.py`), transformation (`transform.py`), and validation (`verify.py`) steps.
+- **Orchestration Layer (Airflow):** Triggers and tracks job execution, logs durations, and notifies on errors via Slack.
+- **Metadata Layer:** Pipeline metadata is stored in BigQuery and visualized in Looker Studio.
+
+
+
 ## 🛠️ Environment Setup
 
 To provision the execution environment, I chose a **cloud-based infrastructure**, specifically **Google Cloud Platform (GCP)**. This approach enables scalable and production-ready orchestration of data pipelines and ML workflows.
