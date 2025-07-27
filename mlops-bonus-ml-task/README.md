@@ -31,12 +31,19 @@ pip install -r requirements.txt
 python scripts/xgb_model_training.py
 
 This script will:
+
 	•	Merge and process the customer and payment datasets
+ 
 	•	Generate features like debt_ratio, mean_ovd, and is_over_limit
+ 
 	•	Train an XGBoost model with SMOTE and StandardScaler in a pipeline
+ 
 	•	Tune hyperparameters using GridSearchCV
+ 
 	•	Log the model and metrics with MLflow
+ 
 	•	Save the final model in models/xgb_model.pkl
+ 
 
 ### 4. Explore the notebook
 
