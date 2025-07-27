@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/valentinabordei/Desktop/MLOPS/mlruns/396407259765657774/6fa3d1be442942fbbb6740ca8afaf554/artifacts
+end_time: 1753629070254
+entry_point_name: ''
+experiment_id: '396407259765657774'
+lifecycle_stage: active
+run_id: 6fa3d1be442942fbbb6740ca8afaf554
+run_name: capricious-hare-589
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1753629068279
+status: 3
+tags: []
+user_id: valentinabordei

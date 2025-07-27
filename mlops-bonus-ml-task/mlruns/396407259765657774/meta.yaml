@@ -1,0 +1,6 @@
+artifact_location: file:///Users/valentinabordei/Desktop/MLOPS/mlruns/396407259765657774
+creation_time: 1753629068275
+experiment_id: '396407259765657774'
+last_update_time: 1753629068275
+lifecycle_stage: active
+name: xgb_experiment
