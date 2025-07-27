@@ -24,7 +24,7 @@ This section demonstrates a full machine learning pipeline using XGBoost for bin
 │   └── model_training.ipynb
 ├── scripts/
 │   └── xgb_model_training.py
-├── mlruns/                # MLflow runs (these artifacts are copied from local execution of the jupyter notebook)
+├── mlruns/                 # MLflow tracking folder (optional in Git)
 ├── requirements.txt
 └── README.md
 
