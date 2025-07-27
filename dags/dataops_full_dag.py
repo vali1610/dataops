@@ -190,14 +190,6 @@ with DAG(
         python_callable=check_alert,
     )
 
-    send_email = EmailOperator(
-        task_id="send_alert_email",
-        to="fercal.petru@gmail.com",
-        subject="[ALERT] DataOps Pipeline - Error or performance issues",
-        html_content="{{ ti.xcom_pull(task_ids='check_metadata_for_alert') }}",
-        trigger_rule="all_done",
-    )
-
     notify_slack_task = PythonOperator(
         task_id="notify_slack",
         python_callable=notify_slack,
@@ -207,4 +199,4 @@ with DAG(
 
     # DAG FLOW
     ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata
-    load_metadata >> check_alert_task >> [send_email, notify_slack_task]
+    load_metadata >> check_alert_task >> [notify_slack_task]
