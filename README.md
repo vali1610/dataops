@@ -135,4 +135,98 @@ GCP authentication in all pipelines is handled securely via a service account st
 - `Terraform` for infrastructure provisioning
 - `GitHub Actions` for automated deployment of infrastructure and job artifacts
 
+## Orchestration with Airflow
+
+This section describes how the full ETL flow is orchestrated using Apache Airflow (running inside Google Cloud Composer) and how operational performance and alerts are handled.
+
+### DAG Location
+
+- DAG file: `dags/dataproc-full-dag.py`
+- Automatically deployed to Composer via the GitHub Actions pipeline:
+  - `.github/workflows/deploy_dags_cloud_composer.yml`
+  - Triggered on `push` to `main` branch
+  - Uploads all DAGs to the GCS bucket used by the Composer environment
+
+---
+
+### DAG Overview
+
+The DAG is responsible for executing the full end-to-end data pipeline using **Dataproc Spark jobs**. Below are the core steps orchestrated by the DAG:
+
+1. **Ingest CSVs**  
+   - Launches `ingest.py` as a Spark job on Dataproc  
+   - Cleans and prepares raw data from GCS
+
+2. **Log Ingestion Metrics**  
+   - Captures job execution time  
+   - Stores structured logs in GCS `/logs/performance_metrics.csv`
+
+3. **Apply Spark Transformations**  
+   - Launches `transform.py` as a Spark job on Dataproc  
+   - Applies business logic and outputs in 5 formats: CSV, Parquet, Delta, Hudi, Iceberg
+
+4. **Log Transformation Metrics**
+
+5. **Verify Data Integrity**  
+   - Launches `verify.py` to read each table format and check schema, row counts, sample values  
+   - Ensures no silent errors occurred during writing
+
+6. **Log Verification Metrics**
+
+7. **Load to BigQuery**  
+   - Launches `load_to_bq.py` to load cleaned data into BigQuery  
+   - Tables: `customer_clean`, `payment_clean`
+
+8. **Log Load Metrics**
+
+9. **Load Metadata to BigQuery**  
+   - Executes `load_metadata_to_bq.py`  
+   - Centralizes all metadata from previous steps into BigQuery table `dataops_metadata.pipeline_runs`
+
+10. **Check for Alerts**  
+    - Executes a shell script (`check_alert.sh`) to scan metadata logs for errors or anomalies  
+    - If any alerts are found (e.g., unexpected row drops, schema mismatches), a flag is set
+
+11. **Notify via Slack**  
+    - Uses Airflow’s `PythonOperator` to send an alert or success message to a Slack channel  
+    - Slack webhook is configured as a Connection in Airflow (`slack_webhook`)
+
+---
+
+### DAG Scheduling
+
+- The DAG is scheduled to run **daily** via `@daily` cron
+- Historical backfilling is disabled via `catchup=False`
+- DAG is tagged with: `['spark', 'dataproc', 'monitoring']`
+
+---
+
+### Monitoring
+
+- Each step's duration is tracked using `do_xcom_push` and a custom logging function
+- Metrics are appended to a CSV log in GCS
+- Pipeline success and anomalies are centralized in BigQuery for visual monitoring
+- Slack integration ensures real-time visibility in case of pipeline failure or data anomalies
+
+---
+
+### Technologies & Components
+
+| Component        | Usage                                                                 |
+|------------------|-----------------------------------------------------------------------|
+| **Airflow (Composer)** | DAG definition and orchestration                                  |
+| **BashOperator** | Launches `gcloud dataproc jobs submit pyspark` for each script        |
+| **PythonOperator** | Used for logging, Slack alerts, and metadata verification logic     |
+| **Slack Webhook** | Notifies stakeholders of pipeline outcome                            |
+| **XCom**         | Captures execution time for each task                                 |
+| **GCS**          | Storage for scripts, input/output data, logs                          |
+| **BigQuery**     | Stores pipeline execution metadata                                    |
+
+---
+
+### DAG Diagram
+
+Here is the graph representation of the pipeline orchestrated via Airflow:
+
+<img width="1484" height="571" alt="image" src="https://github.com/user-attachments/assets/1661175f-fd16-4e40-86f7-007bee1e16a5" />
 
