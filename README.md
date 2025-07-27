@@ -38,96 +38,101 @@ This section describes how the raw datasets are ingested, processed, and exporte
 
 ### Dataset
 
-The source dataset is based on the [Home Credit Default Risk dataset](https://www.kaggle.com/competitions/home-credit-default-risk), downloaded in CSV format. It contains anonymized customer and credit data used for predictive modeling.
+The source dataset used in this project is the [Credit Risk Classification Dataset](https://www.kaggle.com/datasets/praveengovi/credit-risk-classification-dataset) from Kaggle. It contains anonymized features related to credit history and customer behavior, suitable for classification tasks.
 
 ---
 
-### Ingestion & Cleaning (Spark)
+### Ingestion & Cleaning (Spark on Dataproc)
 
-Ingestion and cleaning are handled using the `ingest.py` script located under `local_processing/`.
+Ingestion and initial cleaning are performed using the `ingest.py` script located in the `local_processing/` directory.
 
-This script:
+This script is executed as a **Dataproc job**, and performs the following:
 
-- Reads two raw CSVs (`customer_data_dirty.csv` and `payment_data_dirty.csv`)
-- Cleans and filters invalid or missing entries
-- Casts types and fills missing values (e.g., mean imputation for some features)
-- Drops duplicates based on `id`
-- Stores the cleaned data as Parquet files in a temporary staging path
-
-Metadata such as row count, processing time, and status is logged into a JSON file and can be further pushed to BigQuery.
+- Reads the raw CSV files (`customer_data_dirty.csv` and `payment_data_dirty.csv`) from a GCS bucket
+- Applies cleaning rules:
+  - Drops duplicates based on `id`
+  - Casts necessary fields to proper data types
+  - Filters invalid/missing entries
+  - Fills missing values with statistical aggregates (e.g., mean)
+- Outputs cleaned Parquet files to a temporary staging path (`/temp`)
+- Writes metadata about the step (duration, row counts) as a JSON file in the `/metadata` folder
 
 ---
 
-### Data Transformation (Spark)
+### Data Transformation (Spark on Dataproc)
 
-The transformation is implemented in `transform.py` and includes:
+The `transform.py` script is also run as a **Dataproc job** and performs the following:
 
-- Renaming and aligning features between datasets
-- Writing cleaned data into multiple formats:
+- Reads cleaned Parquet files from `/temp`
+- Renames and aligns features for consistency
+- Converts and writes datasets into multiple formats:
   - ✅ Parquet
-  - ✅ CSV (with header)
-  - ✅ Delta Lake (`.format("delta")`)
-  - ✅ Apache Hudi (insert operation, partitioned by id)
-  - ✅ Apache Iceberg (using Spark SQL catalog and Hadoop warehouse)
+  - ✅ CSV (header included)
+  - ✅ Delta Lake
+  - ✅ Apache Hudi
+  - ✅ Apache Iceberg
 
-Each write operation produces structured outputs in corresponding subfolders (e.g., `/output/delta/customer`).
+These outputs are written under the `/output/` folder (e.g., `/output/delta/customer`, `/output/parquet/payment`, etc.).
 
-Metadata for each step is also generated and saved as JSON (duration, rows, etc.).
-
----
-
-### Verification (Spark)
-
-The `verify.py` script runs after the transformations to validate the written data formats:
-
-- Tries to load and display schema + top 5 records for each format
-- Logs row count and load status
-- Supports: CSV, Parquet, Delta, Hudi, and Iceberg (as Spark table via `gcs.db.customer`)
-- Writes a `verify_metadata.json` file with all verification results
+Corresponding metadata is also saved for tracking and later ingestion.
 
 ---
 
-### Load to BigQuery
+### Verification (Spark on Dataproc)
 
-The `load_to_bq.py` script:
+The `verify.py` script verifies the written outputs across all formats. It is executed as a **Dataproc job**, and for each format:
 
-- Reads cleaned Parquet files
-- Loads them into BigQuery using the `direct` method with `WRITE_TRUNCATE`
-- Supports CLI args for `project_id`, `dataset`, `customer_path`, `payment_path`
-- Saves load summary and metadata (row count, duration) if output base path is provided
+- Loads and prints schema and sample data
+- Counts rows and validates the write
+- Supports: CSV, Parquet, Delta, Hudi, Iceberg
+- Logs verification results into `verify_metadata.json`
+
+---
+
+### Load to BigQuery (Spark on Dataproc)
+
+The `load_to_bq.py` script loads the transformed Parquet data into BigQuery tables using the `direct` write method.
+
+- Tables: `customer_clean`, `payment_clean`
+- Write mode: `WRITE_TRUNCATE`
+- Accepts CLI arguments for GCP project ID, dataset, paths
+- Logs load operation metadata to `load_metadata.json`
 
 ---
 
 ### Metadata Logging to BigQuery
 
-The `load_metadata_to_bq.py` script:
+The `load_metadata_to_bq.py` script reads all metadata files (`ingest_metadata.json`, `transform_metadata.json`, `verify_metadata.json`, `load_metadata.json`), flattens them, and appends them to a centralized BigQuery table:
 
-- Parses all JSON metadata files (ingest, transform, verify, load)
-- Flattens nested JSON fields into BigQuery-compatible schema
-- Appends all logs into a central BigQuery table (`dataops_metadata.pipeline_runs`)
-- Helps track and visualize pipeline execution over time
+- Table: `pipeline_runs` in dataset `dataops_metadata`
+- Fields include step name, row counts, format, success status, errors (if any), and durations
+
+This enables full monitoring of the pipeline’s behavior over time.
 
 ---
 
 ### Deployment & Automation
 
-To automate and sync the local Spark scripts and dependencies (e.g., `.py` and `.jar` files) to the cloud:
+To make the Spark jobs and dependencies available in GCP:
 
-- The `deploy_pyspark_job.yml` GitHub Actions pipeline copies:
-  - All Spark scripts from `local_processing/` to a GCS bucket
-  - Dependencies for Delta, Hudi, Iceberg to the same bucket
-- A trigger ensures this pipeline runs on any change in relevant job files
-- Authentication is handled securely via a GCP service account stored in GitHub Secrets
+- The `deploy_pyspark_job.yml` GitHub Actions pipeline:
+  - Uploads all Spark job scripts from `local_processing/` to a provisioned GCS bucket
+  - Uploads required `.jar` files (for Delta, Hudi, Iceberg support) to the same bucket
+  - Syncs the files automatically on any code change via a GitHub trigger
 
-This ensures reproducibility and centralized storage of Spark jobs in the cloud.
+All Dataproc jobs run these `.py` scripts from the GCS bucket.
+
+GCP authentication in all pipelines is handled securely via a service account stored as a GitHub Secret (`GOOGLE_CREDENTIALS_JSON`), used during GitHub Actions workflows.
 
 ---
 
 ### Technologies Used
 
-- `Apache Spark` for distributed processing
-- `Delta Lake`, `Apache Hudi`, `Apache Iceberg` for modern data lake formats
-- `Google Cloud Storage` as data lake storage backend
-- `BigQuery` for structured storage of both datasets and metadata
-- `GitHub Actions` for automation
-- `Terraform` for provisioning all infrastructure components
+- `Apache Spark` for distributed data processing (executed via Dataproc)
+- `Delta Lake`, `Apache Hudi`, `Apache Iceberg` for modern data formats
+- `Google Cloud Storage` as a data lake
+- `BigQuery` for structured storage and metadata logging
+- `Terraform` for infrastructure provisioning
+- `GitHub Actions` for automated deployment of infrastructure and job artifacts
+
+
