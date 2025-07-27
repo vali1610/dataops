@@ -1,57 +1,25 @@
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.bash import BashOperator
-from airflow.providers.http.operators.http import SimpleHttpOperator
-from airflow.utils.dates import days_ago
-import json
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+import requests
 
-def check_metadata():
-    # Exemplu simplu: raise alertă dacă metadata e suspectă
-    from airflow.exceptions import AirflowSkipException
-    # dacă totul e ok:
-    # raise AirflowSkipException("No issue detected")
-    # dacă vrei să trimiți alerta:
-    return 'send_slack_alert'
-
-default_args = {
-    'owner': 'valentina',
-    'retries': 1,
-}
+def notify_slack():
+    webhook_url = "https://hooks.slack.com/services/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"  # înlocuiește dacă ai altul
+    message = {
+        "text": ":rotating_light: *Alertă Airflow:* A apărut o eroare în pipeline."
+    }
+    response = requests.post(webhook_url, json=message)
+    if response.status_code != 200:
+        raise ValueError(f"Request to Slack failed with status {response.status_code}: {response.text}")
 
 with DAG(
-    dag_id='dataops_pipeline_with_slack',
-    default_args=default_args,
-    start_date=days_ago(1),
+    dag_id='slack_alert_fallback',
+    start_date=datetime(2025, 7, 27),
     schedule_interval=None,
-    catchup=False,
-    tags=['dataops'],
+    catchup=False
 ) as dag:
 
-    load_metadata = BashOperator(
-        task_id='load_metadata',
-        bash_command='echo "loading metadata..."'
-    )
-
-    check_metadata_for_alert = PythonOperator(
-        task_id='check_metadata_for_alert',
-        python_callable=check_metadata
-    )
-
-    send_slack_alert = SimpleHttpOperator(
+    alert_task = PythonOperator(
         task_id='send_slack_alert',
-        http_conn_id='slack_webhook',
-        method='POST',
-        data=json.dumps({
-            'text': ':rotating_light: Metadata anomaly detected in DAG *{{ dag.dag_id }}*, task *{{ task_instance.task_id }}*. Please check!'
-        }),
-        headers={"Content-Type": "application/json"},
+        python_callable=notify_slack
     )
-
-    # restul pașilor tăi (exemplu)
-    load = BashOperator(
-        task_id='load',
-        bash_command='echo "loading data..."'
-    )
-
-    # chain
-    load_metadata >> check_metadata_for_alert >> send_slack_alert >> load
