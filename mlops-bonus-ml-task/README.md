@@ -48,3 +48,11 @@ jupyter notebook notebooks/model_training.ipynb
 mlflow ui --backend-store-uri ./mlruns and open in http://localhost:5000
 <img width="1913" height="571" alt="image" src="https://github.com/user-attachments/assets/9f093306-ab63-4660-819d-ff33714e67ce" />
 
+## Model Evaluation
+
+The final XGBoost model achieved a **ROC-AUC score of ~0.93** on the test set, indicating strong ability to distinguish between classes.  
+The **confusion matrix** shows a good balance between precision and recall, with most positive and negative samples correctly classified.  
+We used **SMOTE** to handle class imbalance and performed **GridSearchCV** for hyperparameter tuning.  
+Feature importance analysis revealed that variables like `mean_ovd`, `debt_ratio`, and `credit_limit` had the strongest predictive power.
+
+*Note: This model was trained on a synthetic dataset. Real-world performance may vary.*
