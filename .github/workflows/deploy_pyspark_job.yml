@@ -1,6 +1,11 @@
 name: Deploy and Run Spark Job on Dataproc
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'local_processing/**'
   workflow_dispatch:
     inputs:
       project_id:

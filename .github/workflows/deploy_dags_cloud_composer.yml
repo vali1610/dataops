@@ -1,12 +1,11 @@
 name: Deploy DAG to Composer
 
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - 'dags/**'
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'dags/**'
   workflow_dispatch:
     inputs:
       bucket_name:
