@@ -46,7 +46,7 @@ jobs:
 
       - name: Upload Spark job and input CSVs to GCS
         run: |
-          gsutil cp ./local_processing/*.py gs://vale-dataops-bucket/jobs/
+          gsutil cp ./local_processing/* gs://vale-dataops-bucket/jobs/
           gsutil cp ./customer_data_dirty.csv gs://vale-dataops-bucket/data/
           gsutil cp ./payment_data_dirty.csv gs://vale-dataops-bucket/data/
 
