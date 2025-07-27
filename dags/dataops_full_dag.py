@@ -38,32 +38,14 @@ def upload_metrics(task_name, **kwargs):
         f.write(line)
     os.system(f"gsutil cp /tmp/metrics.csv {LOG_PATH}")
 
-def prepare_alert(**kwargs):
-    bucket = "vale-dataops-bucket"
-    paths = [
-        "output/metadata/ingest_metadata.json",
-        "output/metadata/transform_metadata.json",
-        "output/metadata/verify_metadata.json",
-        "output/metadata/load_metadata.json"
-    ]
-    client = storage.Client()
-    msg_lines = []
-    alert_needed = False
+def check_alert():
+    os.system(f"gsutil cp {SCRIPT_PATH}/check_alert.sh /tmp/check_alert.sh")
+    os.system("chmod +x /tmp/check_alert.sh")
+    os.system(f"/tmp/check_alert.sh {BUCKET}")
+    with open("/tmp/alert.txt", "r") as f:
+        content = f.read().strip()
+    return content if content != "NO_ALERT" else None
 
-    for path in paths:
-        blob = client.bucket(bucket).blob(path)
-        content = blob.download_as_text()
-        data = json.loads(content)[0] if content.startswith('[') else json.loads(content)
-        
-        if data.get("status") == "failed" or data.get("row_count", 1) < 100 or data.get("duration_sec", 0) > 300:
-            alert_needed = True
-            msg_lines.append(f"Step `{data.get('step', 'unknown')}`: status={data.get('status')}, duration={data.get('duration_sec')} sec, row_count={data.get('row_count')}")
-
-    if alert_needed:
-        msg = "\n".join(msg_lines)
-        kwargs['ti'].xcom_push(key="alert_body", value=msg)
-    else:
-        kwargs['ti'].xcom_push(key="alert_body", value=None)
 with DAG(
     dag_id='dataproc_pipeline_complex',
     default_args=default_args,
@@ -160,33 +142,43 @@ with DAG(
         python_callable=upload_metrics,
         op_kwargs={'task_name': 'load'},
     )
+
     load_metadata = BashOperator(
-    task_id='load_metadata',
-    bash_command=f"""
-    gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/load_metadata_to_bq.py \
-      --cluster={CLUSTER_NAME} \
-      --region={REGION} \
-      -- \
-      {PROJECT_ID} dataops_dataset pipeline_metadata \
-      {OUTPUT_PATH}/metadata/ingest_metadata.json \
-      {OUTPUT_PATH}/metadata/transform_metadata.json \
-      {OUTPUT_PATH}/metadata/verify_metadata.json \
-      {OUTPUT_PATH}/metadata/load_metadata.json
-    """,
+        task_id='load_metadata',
+        bash_command=f"""
+        for dir in ingest_metadata.json transform_metadata.json verify_metadata.json load_metadata.json; do
+        for file in $(gsutil ls {OUTPUT_PATH}/metadata/$dir/); do
+            size=$(gsutil du "$file" | cut -f1)
+            if [ "$size" -eq 0 ]; then
+                echo "Remove empty file: $file"
+                gsutil rm "$file"
+            fi
+        done
+        done
+
+        gcloud dataproc jobs submit pyspark {SCRIPT_PATH}/load_metadata_to_bq.py \
+        --cluster={CLUSTER_NAME} \
+        --region={REGION} \
+        -- \
+        {PROJECT_ID} dataops_dataset pipeline_metadata \
+        {OUTPUT_PATH}/metadata/ingest_metadata.json/* \
+        {OUTPUT_PATH}/metadata/transform_metadata.json/* \
+        {OUTPUT_PATH}/metadata/verify_metadata.json/* \
+        {OUTPUT_PATH}/metadata/load_metadata.json/*
+        """,
     )
-    check_metadata = PythonOperator(
-    task_id="check_metadata_for_alert",
-    python_callable=prepare_alert,
-    provide_context=True,
+
+    check_alert_task = PythonOperator(
+        task_id="check_metadata_for_alert",
+        python_callable=check_alert,
     )
 
     send_email = EmailOperator(
         task_id="send_alert_email",
         to="valentinaetti@yahoo.com",
         subject="[ALERT] DataOps Pipeline - Error or performance issues",
-        html_content="{{ ti.xcom_pull(task_ids='check_metadata_for_alert', key='alert_body') }}",
-        trigger_rule="all_done",  
+        html_content="{{ ti.xcom_pull(task_ids='check_metadata_for_alert') }}",
+        trigger_rule="all_done",
     )
 
-
-    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata >> check_metadata >> send_email
+    ingest >> log_ingest >> transform >> log_transform >> verify >> log_verify >> load >> log_load >> load_metadata >> check_alert_task >> send_email
