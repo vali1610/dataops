@@ -9,6 +9,7 @@ This section demonstrates a full machine learning pipeline using XGBoost for bin
 - MLflow tracking and model logging
 - Final model export
 - Visualizations (feature importance, confusion matrix)
+<img width="1397" height="559" alt="image" src="https://github.com/user-attachments/assets/9249c6b6-8f39-4c78-952f-097e22d3f59d" />
 
 ---
 
