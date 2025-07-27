@@ -8,7 +8,8 @@ Apache Spark for scalable data processing, and Airflow for orchestration and mon
 
 ## 📌 Architecture Diagram
 
-<img width="1226" height="785" alt="image" src="https://github.com/user-attachments/assets/847413eb-4e18-4252-a689-b36441f3c838" />
+<img width="1211" height="774" alt="image" src="https://github.com/user-attachments/assets/be5852f5-c54a-4072-9983-ad982e71c3f3" />
+
 
 
 The diagram above illustrates the main components of the solution:
