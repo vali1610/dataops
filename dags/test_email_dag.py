@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash import BashOperator
-from airflow.operators.http_operator import SimpleHttpOperator
+from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.dates import days_ago
 import json
 
