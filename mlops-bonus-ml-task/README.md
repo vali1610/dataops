@@ -54,7 +54,10 @@ This script will:
 ### 4. Explore the notebook
 
 jupyter notebook notebooks/model_training.ipynb
+<img width="1167" height="977" alt="image" src="https://github.com/user-attachments/assets/9069392a-b2f3-4699-8bd0-eb8b1ec7068a" />
 
 ### 5. MLflow UI
 
 mlflow ui --backend-store-uri ./mlruns and open in http://localhost:5000
+<img width="1913" height="571" alt="image" src="https://github.com/user-attachments/assets/9f093306-ab63-4660-819d-ff33714e67ce" />
+
