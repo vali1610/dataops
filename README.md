@@ -237,3 +237,36 @@ Here is the graph representation of the pipeline orchestrated via Airflow:
 
 <img width="1484" height="571" alt="image" src="https://github.com/user-attachments/assets/1661175f-fd16-4e40-86f7-007bee1e16a5" />
 
+## Bonus: Monitoring & Observability
+
+As an additional step, a **metadata logging layer** was implemented to enhance pipeline observability. This layer captures key metrics during ETL execution, stores them in BigQuery, and enables monitoring through Looker Studio.
+
+### Metadata Pipeline Logging
+
+Each major pipeline step (ingest, transform, verify, load) logs its execution metrics:
+- **Timestamp**
+- **Step name**
+- **Execution duration**
+- **Status** (success / warning)
+
+The data is stored in the following BigQuery table: dataops_dataset.pipeline_runs
+A dedicated DAG task loads this metadata into BigQuery after each run.
+
+### Alerts
+
+To ensure operational awareness:
+- A custom script (`check_alert.sh`) analyzes metadata for anomalies (e.g., long execution time).
+- If any alerts are detected, they are sent via **Slack webhook notification**, using a secured connection in the Airflow config (`slack_webhook` connection).
+- If no anomalies are found, a "✅ all good" message is posted.
+
+### Looker Studio Dashboard
+
+A lightweight **Looker Studio dashboard** was connected to the BigQuery metadata table to visualize:
+- Execution durations per step
+- Daily pipeline run status
+- Alert trends (if any)
+  <img width="1117" height="822" alt="image" src="https://github.com/user-attachments/assets/8988b5dd-1c2c-4d5a-af73-54e976c07631" />
+
+
+
+
