@@ -49,6 +49,8 @@ This script will:
 
 jupyter notebook notebooks/model_training.ipynb
 <img width="1167" height="977" alt="image" src="https://github.com/user-attachments/assets/9069392a-b2f3-4699-8bd0-eb8b1ec7068a" />
+<img width="735" height="555" alt="image" src="https://github.com/user-attachments/assets/4b2012f8-e382-4798-b97a-bcca4c3f2a7f" />
+
 
 ### 5. MLflow UI
 
