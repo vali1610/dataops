@@ -175,7 +175,7 @@ with DAG(
 
     send_email = EmailOperator(
         task_id="send_alert_email",
-        to="valentinaetti@yahoo.com",
+        to="fercal.petru@gmail.com",
         subject="[ALERT] DataOps Pipeline - Error or performance issues",
         html_content="{{ ti.xcom_pull(task_ids='check_metadata_for_alert') }}",
         trigger_rule="all_done",
