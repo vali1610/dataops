@@ -124,7 +124,7 @@ def main():
     verify_data(spark, "hudi", "gs://vale-dataops-bucket/output/hudi/customer_data")
     verify_data(spark, "iceberg", "gcs.db.customer_data", is_table=True)
 
-    print("\n All ETL steps and checks complete!:)")
+    print("\n All ETL steps and  checks complete!")
 
 if __name__ == "__main__":
     main()
