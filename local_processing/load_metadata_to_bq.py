@@ -27,10 +27,10 @@ def parse_json_line(line, path):
                     item["step"] = "verify"
             return parsed
         else:
-            print(f"⚠️ Tip necunoscut în fișierul {path}: {type(parsed)}")
+            print(f"Unknown data type in file {path}: {type(parsed)}")
             return []
     except Exception as e:
-        print(f"⚠️ Eroare la parsare JSON în {path}: {e}")
+        print(f" Could not parse JSON in path {path}: {e}")
         return []
 
 def flatten_record(data, run_date, path):
@@ -68,7 +68,7 @@ for path in input_paths:
         print(f"❌ Eroare la citirea fișierului {path}: {e}")
 
 if not all_rows:
-    print("⚠️ Nu s-au găsit date valide. Ieșire.")
+    print("No valid data found.")
     sys.exit(1)
 
 schema = StructType([
@@ -87,7 +87,7 @@ schema = StructType([
     StructField("row_count", IntegerType(), True),
 ])
 
-print(f"\n✅ Total rânduri procesate: {len(all_rows)}")
+print(f"\nTotal of processed rows: {len(all_rows)}")
 
 final_df = spark.createDataFrame(all_rows, schema=schema)
 
@@ -99,6 +99,6 @@ final_df.write \
     .mode("append") \
     .save()
 
-print("✅ Upload complet cu succes!")
+print("✅ Upload succesfully complete!")
 
 spark.stop()
