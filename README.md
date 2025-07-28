@@ -53,7 +53,7 @@ After setting up this pipeline, a fully operational data platform is provisioned
 - A **Cloud Composer 2 environment**, which runs **Apache Airflow DAGs**  
 - A **BigQuery dataset** for tracking pipeline metadata and output tables  
 
-> ✅ This setup ensures all Spark, Airflow, and Hadoop requirements mentioned in the challenge are fulfilled via GCP-native services.
+> ✅ This setup ensures all Spark, Airflow, and Hadoop infra is fulfilled via GCP-native services.
 
 ## Data Ingestion & Transformation
 
